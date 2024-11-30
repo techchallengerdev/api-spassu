@@ -18,7 +18,9 @@ public class AtualizarAutorUseCase {
     public AutorDTO execute(Integer id, AutorDTO dto) {
         return autorRepository.findByCodigo(id)
                 .map(autor -> {
-                    autor.setNome(dto.getNome());
+                    if (dto.getNome() != null) {
+                        autor.setNome(dto.getNome());
+                    }
                     return autorMapper.toDTO(autorRepository.save(autor));
                 })
                 .orElseThrow(() -> new EntityNotFoundException("Autor não encontrado"));

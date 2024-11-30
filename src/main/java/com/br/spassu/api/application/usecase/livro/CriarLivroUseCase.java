@@ -1,12 +1,11 @@
 package com.br.spassu.api.application.usecase.livro;
 
-import com.br.spassu.api.domain.entity.Livro;
-import com.br.spassu.api.domain.exceptions.EntityNotFoundException;
-import com.br.spassu.api.domain.repository.LivroRepository;
-import com.br.spassu.api.domain.repository.AutorRepository;
-import com.br.spassu.api.domain.repository.AssuntoRepository;
 import com.br.spassu.api.application.dto.LivroDTO;
 import com.br.spassu.api.application.mapper.LivroMapper;
+import com.br.spassu.api.domain.entity.Livro;
+import com.br.spassu.api.domain.repository.AssuntoRepository;
+import com.br.spassu.api.domain.repository.AutorRepository;
+import com.br.spassu.api.domain.repository.LivroRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,16 +20,26 @@ public class CriarLivroUseCase {
 
     @Transactional
     public LivroDTO execute(LivroDTO dto) {
-        Livro livro = livroMapper.toEntity(dto);
 
-        dto.getIdsAutores().forEach(autorId ->
-                autorRepository.findByCodigo(autorId)
-                        .ifPresent(livro::adicionarAutor));
+        // Converter DTO para Domain
+        Livro livro = livroMapper.toDomain(dto);
 
-        dto.getIdsAssuntos().forEach(assuntoId ->
-                assuntoRepository.findByCodigo(assuntoId)
-                        .ifPresent(livro::adicionarAssunto));
+        // Adicionar autores
+        if (dto.getIdsAutores() != null) {
+            dto.getIdsAutores().forEach(autorId ->
+                    autorRepository.findByCodigo(autorId)
+                            .ifPresent(livro::adicionarAutor));
+        }
 
-        return livroMapper.toDTO(livroRepository.save(livro));
+        // Adicionar assuntos
+        if (dto.getIdsAssuntos() != null) {
+            dto.getIdsAssuntos().forEach(assuntoId ->
+                    assuntoRepository.findByCodigo(assuntoId)
+                            .ifPresent(livro::adicionarAssunto));
+        }
+
+        // Salvar e converter resultado para DTO
+        Livro livroSalvo = livroRepository.save(livro);
+        return livroMapper.toDTO(livroSalvo);
     }
 }

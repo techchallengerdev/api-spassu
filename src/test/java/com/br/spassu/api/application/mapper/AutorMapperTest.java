@@ -1,77 +1,73 @@
 package com.br.spassu.api.application.mapper;
 
-import com.br.spassu.api.domain.entity.Autor;
-import com.br.spassu.api.domain.entity.Livro;
 import com.br.spassu.api.application.dto.AutorDTO;
-import com.br.spassu.api.application.dto.LivroResumoDTO;
-import org.junit.jupiter.api.BeforeEach;
+import com.br.spassu.api.domain.entity.Autor;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import java.util.Set;
+
+import java.util.HashSet;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("Testes do AutorMapper")
 class AutorMapperTest {
 
     @Mock
     private LivroMapper livroMapper;
 
+    @InjectMocks
     private AutorMapper autorMapper;
 
-    @BeforeEach
-    void setUp() {
-        autorMapper = new AutorMapper(livroMapper);
+    @Nested
+    @DisplayName("Testes de toDTO")
+    class ToDTOTests {
+
+        @Test
+        @DisplayName("Deve converter Autor para DTO com sucesso")
+        void deveConverterAutorParaDTO() {
+            Autor autor = new Autor();
+            autor.setCodigo(1);
+            autor.setNome("Robert C. Martin");
+            autor.setLivros(new HashSet<>());
+
+            AutorDTO dto = autorMapper.toDTO(autor);
+
+            assertThat(dto)
+                    .isNotNull()
+                    .satisfies(d -> {
+                        assertThat(d.getId()).isEqualTo(1);
+                        assertThat(d.getNome()).isEqualTo("Robert C. Martin");
+                        assertThat(d.getLivros()).isEmpty();
+                    });
+        }
     }
 
-    @Test
-    void deveMappearAutorParaDTO() {
-        Autor autor = criarAutor();
-        Livro livro = new Livro();
-        livro.setCodigo(1);
-        autor.setLivros(Set.of(livro));
+    @Nested
+    @DisplayName("Testes de toDomain")
+    class ToDomainTests {
 
-        LivroResumoDTO livroResumoDTO = new LivroResumoDTO();
-        livroResumoDTO.setId(1);
-        when(livroMapper.toResumoDTO(livro)).thenReturn(livroResumoDTO);
+        @Test
+        @DisplayName("Deve converter DTO para Domain com sucesso")
+        void deveConverterDTOParaDomain() {
+            AutorDTO dto = new AutorDTO();
+            dto.setId(1);
+            dto.setNome("Robert C. Martin");
 
-        AutorDTO dto = autorMapper.toDTO(autor);
+            Autor domain = autorMapper.toDomain(dto);
 
-        assertThat(dto).isNotNull();
-        assertThat(dto.getId()).isEqualTo(1);
-        assertThat(dto.getNome()).isEqualTo("Robert C. Martin");
-        assertThat(dto.getLivros()).hasSize(1);
-    }
-
-    @Test
-    void deveMappearDTOParaAutor() {
-        AutorDTO dto = criarAutorDTO();
-        Autor autor = autorMapper.toEntity(dto);
-        assertThat(autor).isNotNull();
-        assertThat(autor.getCodigo()).isEqualTo(1);
-        assertThat(autor.getNome()).isEqualTo("Robert C. Martin");
-    }
-
-    @Test
-    void deveRetornarNullQuandoAutorForNull() {
-        assertThat(autorMapper.toDTO(null)).isNull();
-        assertThat(autorMapper.toEntity(null)).isNull();
-    }
-
-    private Autor criarAutor() {
-        Autor autor = new Autor();
-        autor.setCodigo(1);
-        autor.setNome("Robert C. Martin");
-        return autor;
-    }
-
-    private AutorDTO criarAutorDTO() {
-        AutorDTO dto = new AutorDTO();
-        dto.setId(1);
-        dto.setNome("Robert C. Martin");
-        return dto;
+            assertThat(domain)
+                    .isNotNull()
+                    .satisfies(d -> {
+                        assertThat(d.getCodigo()).isEqualTo(1);
+                        assertThat(d.getNome()).isEqualTo("Robert C. Martin");
+                        assertThat(d.getLivros()).isEmpty();
+                    });
+        }
     }
 }

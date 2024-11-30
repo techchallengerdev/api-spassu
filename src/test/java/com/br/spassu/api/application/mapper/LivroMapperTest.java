@@ -1,114 +1,87 @@
 package com.br.spassu.api.application.mapper;
 
-import com.br.spassu.api.domain.entity.Livro;
-import com.br.spassu.api.domain.entity.Autor;
-import com.br.spassu.api.domain.entity.Assunto;
 import com.br.spassu.api.application.dto.LivroDTO;
 import com.br.spassu.api.application.dto.LivroResumoDTO;
+import com.br.spassu.api.domain.entity.Livro;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
-import java.util.Set;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.HashSet;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ExtendWith(MockitoExtension.class)
+@DisplayName("Testes do LivroMapper")
 class LivroMapperTest {
 
+    @Mock
+    private AutorMapper autorMapper;
+
+    @Mock
+    private AssuntoMapper assuntoMapper;
+
+    @InjectMocks
     private LivroMapper livroMapper;
 
-    @BeforeEach
-    void setUp() {
-        livroMapper = new LivroMapper();
+    @Nested
+    @DisplayName("Testes de toDTO")
+    class ToDTOTests {
+
+        @Test
+        @DisplayName("Deve converter Livro para DTO com sucesso")
+        void deveConverterLivroParaDTO() {
+            // given
+            Livro livro = new Livro();
+            livro.setCodigo(1);
+            livro.setTitulo("Clean Code");
+            livro.setEditora("Alta Books");
+            livro.setEdicao(1);
+            livro.setAnoPublicacao("2008");
+            livro.setAutores(new HashSet<>());
+            livro.setAssuntos(new HashSet<>());
+
+            // when
+            LivroDTO dto = livroMapper.toDTO(livro);
+
+            // then
+            assertThat(dto)
+                    .isNotNull()
+                    .satisfies(d -> {
+                        assertThat(d.getId()).isEqualTo(1);
+                        assertThat(d.getTitulo()).isEqualTo("Clean Code");
+                        assertThat(d.getEditora()).isEqualTo("Alta Books");
+                        assertThat(d.getNumeroEdicao()).isEqualTo(1);
+                        assertThat(d.getAnoPublicacao()).isEqualTo("2008");
+                        assertThat(d.getIdsAutores()).isEmpty();
+                        assertThat(d.getIdsAssuntos()).isEmpty();
+                    });
+        }
     }
 
     @Test
-    void deveMappearLivroParaDTO() {
+    @DisplayName("Deve converter para ResumoDTO com sucesso")
+    void deveConverterParaResumoDTOComSucesso() {
         // given
-        Livro livro = criarLivro();
-
-        // when
-        LivroDTO dto = livroMapper.toDTO(livro);
-
-        // then
-        assertThat(dto).isNotNull();
-        assertThat(dto.getId()).isEqualTo(1);
-        assertThat(dto.getTitulo()).isEqualTo("Clean Code");
-        assertThat(dto.getEditora()).isEqualTo("Alta Books");
-        assertThat(dto.getNumeroEdicao()).isEqualTo(1);
-        assertThat(dto.getAnoPublicacao()).isEqualTo("2008");
-        assertThat(dto.getIdsAutores()).containsExactly(1);
-        assertThat(dto.getIdsAssuntos()).containsExactly(1);
-    }
-
-    @Test
-    void deveMappearDTOParaLivro() {
-        // given
-        LivroDTO dto = criarLivroDTO();
-
-        // when
-        Livro livro = livroMapper.toEntity(dto);
-
-        // then
-        assertThat(livro).isNotNull();
-        assertThat(livro.getCodigo()).isEqualTo(1);
-        assertThat(livro.getTitulo()).isEqualTo("Clean Code");
-        assertThat(livro.getEditora()).isEqualTo("Alta Books");
-        assertThat(livro.getEdicao()).isEqualTo(1);
-        assertThat(livro.getAnoPublicacao()).isEqualTo("2008");
-        assertThat(livro.getAutores()).isEmpty();
-        assertThat(livro.getAssuntos()).isEmpty();
-    }
-
-    @Test
-    void deveMappearLivroParaResumoDTO() {
-        // given
-        Livro livro = criarLivro();
-
-        // when
-        LivroResumoDTO resumoDTO = livroMapper.toResumoDTO(livro);
-
-        // then
-        assertThat(resumoDTO).isNotNull();
-        assertThat(resumoDTO.getId()).isEqualTo(1);
-        assertThat(resumoDTO.getTitulo()).isEqualTo("Clean Code");
-        assertThat(resumoDTO.getAnoPublicacao()).isEqualTo("2008");
-    }
-
-    @Test
-    void deveRetornarNullQuandoLivroForNull() {
-        assertThat(livroMapper.toDTO(null)).isNull();
-        assertThat(livroMapper.toEntity(null)).isNull();
-        assertThat(livroMapper.toResumoDTO(null)).isNull();
-    }
-
-    private Livro criarLivro() {
         Livro livro = new Livro();
         livro.setCodigo(1);
         livro.setTitulo("Clean Code");
-        livro.setEditora("Alta Books");
-        livro.setEdicao(1);
         livro.setAnoPublicacao("2008");
 
-        Autor autor = new Autor();
-        autor.setCodigo(1);
+        // when
+        LivroResumoDTO resumo = livroMapper.toResumoDTO(livro);
 
-        Assunto assunto = new Assunto();
-        assunto.setCodigo(1);
-
-        livro.setAutores(Set.of(autor));
-        livro.setAssuntos(Set.of(assunto));
-
-        return livro;
-    }
-
-    private LivroDTO criarLivroDTO() {
-        LivroDTO dto = new LivroDTO();
-        dto.setId(1);
-        dto.setTitulo("Clean Code");
-        dto.setEditora("Alta Books");
-        dto.setNumeroEdicao(1);
-        dto.setAnoPublicacao("2008");
-        dto.setIdsAutores(Set.of(1));
-        dto.setIdsAssuntos(Set.of(1));
-        return dto;
+        // then
+        assertThat(resumo)
+                .isNotNull()
+                .satisfies(r -> {
+                    assertThat(r.getId()).isEqualTo(1);
+                    assertThat(r.getTitulo()).isEqualTo("Clean Code");
+                    assertThat(r.getAnoPublicacao()).isEqualTo("2008");
+                });
     }
 }

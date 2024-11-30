@@ -16,7 +16,11 @@ public class CriarAssuntoUseCase {
 
     @Transactional
     public AssuntoDTO execute(AssuntoDTO dto) {
-        Assunto assunto = assuntoMapper.toEntity(dto);
-        return assuntoMapper.toDTO(assuntoRepository.save(assunto));
+        // Converter DTO para Domain
+        Assunto assunto = assuntoMapper.toDomain(dto);
+
+        // Salvar e converter resultado para DTO
+        Assunto assuntoSalvo = assuntoRepository.save(assunto);
+        return assuntoMapper.toDTO(assuntoSalvo);
     }
 }

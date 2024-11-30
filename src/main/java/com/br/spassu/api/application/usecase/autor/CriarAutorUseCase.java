@@ -16,7 +16,11 @@ public class CriarAutorUseCase {
 
     @Transactional
     public AutorDTO execute(AutorDTO dto) {
-        Autor autor = autorMapper.toEntity(dto);
-        return autorMapper.toDTO(autorRepository.save(autor));
+        // Converter DTO para Domain
+        Autor autor = autorMapper.toDomain(dto);
+
+        // Salvar e converter resultado para DTO
+        Autor autorSalvo = autorRepository.save(autor);
+        return autorMapper.toDTO(autorSalvo);
     }
 }

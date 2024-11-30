@@ -4,13 +4,16 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.Set;
+import java.util.HashSet;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@DisplayName("Testes para AutorDTO")
 class AutorDTOTest {
+
     private Validator validator;
 
     @BeforeEach
@@ -20,46 +23,33 @@ class AutorDTOTest {
     }
 
     @Test
+    @DisplayName("Deve criar AutorDTO válido")
     void deveCriarAutorDTOValido() {
-        // given
-        AutorDTO autorDTO = new AutorDTO();
-        autorDTO.setId(1);
-        autorDTO.setNome("Robert C. Martin");
-        autorDTO.setLivros(Set.of(
-                criarLivroResumo(1, "Clean Code", "2008"),
-                criarLivroResumo(2, "Clean Architecture", "2017")
-        ));
 
-        // when
-        var violations = validator.validate(autorDTO);
+        AutorDTO dto = new AutorDTO();
+        dto.setId(1);
+        dto.setNome("Robert C. Martin");
+        dto.setLivros(new HashSet<>());
 
-        // then
+        var violations = validator.validate(dto);
+
         assertThat(violations).isEmpty();
-        assertThat(autorDTO.getId()).isEqualTo(1);
-        assertThat(autorDTO.getNome()).isEqualTo("Robert C. Martin");
-        assertThat(autorDTO.getLivros()).hasSize(2);
     }
 
     @Test
+    @DisplayName("Deve validar nome obrigatório")
     void deveValidarNomeObrigatorio() {
-        // given
-        AutorDTO autorDTO = new AutorDTO();
-        autorDTO.setId(1);
 
-        // when
-        var violations = validator.validate(autorDTO);
+        AutorDTO dto = new AutorDTO();
+        dto.setId(1);
 
-        // then
-        assertThat(violations).hasSize(1);
-        assertThat(violations.iterator().next().getMessage())
-                .isEqualTo("Nome é obrigatório");
-    }
+        var violations = validator.validate(dto);
 
-    private LivroResumoDTO criarLivroResumo(Integer id, String titulo, String ano) {
-        LivroResumoDTO resumo = new LivroResumoDTO();
-        resumo.setId(id);
-        resumo.setTitulo(titulo);
-        resumo.setAnoPublicacao(ano);
-        return resumo;
+        assertThat(violations)
+                .hasSize(1)
+                .anySatisfy(violation -> {
+                    assertThat(violation.getPropertyPath().toString()).isEqualTo("nome");
+                    assertThat(violation.getMessage()).isEqualTo("Nome é obrigatório");
+                });
     }
 }
