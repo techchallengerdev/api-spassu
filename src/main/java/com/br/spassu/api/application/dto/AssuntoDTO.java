@@ -19,6 +19,5 @@ public class AssuntoDTO {
     @NotBlank(message = "Descrição é obrigatória")
     @Size(max = 20, message = "Descrição deve ter no máximo 20 caracteres")
     private String descricao;
-
     private List<Integer> livros;
 }
