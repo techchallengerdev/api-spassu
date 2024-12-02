@@ -28,7 +28,7 @@ public class CriarAssuntoUseCase {
             throw new BusinessException("Dados do assunto não informados");
         }
         if (dto.getDescricao() == null || dto.getDescricao().trim().isEmpty()) {
-            throw new BusinessException("Descrição do assunto é obrigatória");
+            throw new BusinessException("Descrição é obrigatória");
         }
     }
 

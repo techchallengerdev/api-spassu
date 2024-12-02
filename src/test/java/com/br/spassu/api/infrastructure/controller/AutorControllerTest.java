@@ -21,8 +21,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -135,6 +134,16 @@ class AutorControllerTest {
 
         mockMvc.perform(MockMvcRequestBuilders.delete("/api/v1/autores/{id}", id))
                 .andExpect(MockMvcResultMatchers.status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao deletar um autor")
+    void testDeletarAutorComErro() throws Exception {
+        Integer id = 1;
+        doThrow(new RuntimeException("Erro na deleção")).when(deletarAutorUseCase).execute(anyInt());
+
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/v1/autores/{id}", id))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 
     @Test
