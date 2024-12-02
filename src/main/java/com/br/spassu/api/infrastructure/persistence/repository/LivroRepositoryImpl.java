@@ -50,14 +50,14 @@ public class LivroRepositoryImpl implements LivroRepository {
 
     @Override
     public List<Livro> findByAutor(Autor autor) {
-        return livroRepository.findByAutoresCodAu(autor.getCodigo()).stream()
+        return livroRepository.findByAutorCodigo(autor.getCodigo()).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<Livro> findByAssunto(Assunto assunto) {
-        return livroRepository.findByAssuntosCodAs(assunto.getCodigo()).stream()
+        return livroRepository.findByAssuntoCodigo(assunto.getCodigo()).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }

@@ -1,19 +1,21 @@
 package com.br.spassu.api.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
-@Getter
-@Setter
 @Entity
-@Builder
 @Table(name = "Livro")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class LivroEntity {
+
     @Id
-    @Column(name = "CodI")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "codigo")
     private Integer codigo;
 
     @Column(name = "Titulo", length = 40, nullable = false)
@@ -31,16 +33,18 @@ public class LivroEntity {
     @ManyToMany
     @JoinTable(
             name = "Livro_Autor",
-            joinColumns = @JoinColumn(name = "Livro_CodI"),
-            inverseJoinColumns = @JoinColumn(name = "Autor_CodAu")
+            joinColumns = @JoinColumn(name = "livro_codigo"),
+            inverseJoinColumns = @JoinColumn(name = "autor_codigo")
     )
-    private List<AutorEntity> autores;
+    @Builder.Default
+    private List<AutorEntity> autores = new ArrayList<>();
 
     @ManyToMany
     @JoinTable(
             name = "Livro_Assunto",
-            joinColumns = @JoinColumn(name = "Livro_CodI"),
-            inverseJoinColumns = @JoinColumn(name = "Assunto_codAs")
+            joinColumns = @JoinColumn(name = "livro_codigo"),
+            inverseJoinColumns = @JoinColumn(name = "assunto_codigo")
     )
-    private List<AssuntoEntity> assuntos;
+    @Builder.Default
+    private List<AssuntoEntity> assuntos = new ArrayList<>();
 }

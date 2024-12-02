@@ -5,16 +5,18 @@ import com.br.spassu.api.domain.entity.Assunto;
 import com.br.spassu.api.domain.entity.Autor;
 import com.br.spassu.api.domain.entity.Livro;
 import com.br.spassu.api.infrastructure.persistence.entity.LivroEntity;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.stream.Collectors;
 
 @Component
-@RequiredArgsConstructor
 public class LivroMapper {
     private final AutorMapper autorMapper;
     private final AssuntoMapper assuntoMapper;
+    public LivroMapper(AutorMapper autorMapper, AssuntoMapper assuntoMapper) {
+        this.autorMapper = autorMapper;
+        this.assuntoMapper = assuntoMapper;
+    }
 
     // Domain -> DTO
     public LivroDTO toDto(Livro livro) {

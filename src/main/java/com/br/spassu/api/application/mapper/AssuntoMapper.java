@@ -5,16 +5,14 @@ import com.br.spassu.api.domain.entity.Assunto;
 import com.br.spassu.api.domain.entity.Livro;
 import com.br.spassu.api.infrastructure.persistence.entity.AssuntoEntity;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 @Component
-@RequiredArgsConstructor
 public class AssuntoMapper {
-    private final LivroMapper livroMapper;
-
     // Domain -> DTO
     public AssuntoDTO toDto(Assunto assunto) {
         if (assunto == null) return null;
@@ -35,7 +33,7 @@ public class AssuntoMapper {
         return Assunto.builder()
                 .codigo(dto.getCodigo())
                 .descricao(dto.getDescricao())
-                .livros(new ArrayList<>())  // Inicializa lista vazia
+                .livros(new ArrayList<>())
                 .build();
     }
 
@@ -46,9 +44,6 @@ public class AssuntoMapper {
         return AssuntoEntity.builder()
                 .codigo(assunto.getCodigo())
                 .descricao(assunto.getDescricao())
-                .livros(assunto.getLivros().stream()
-                        .map(livroMapper::toEntity)
-                        .collect(Collectors.toList()))
                 .build();
     }
 
@@ -59,9 +54,14 @@ public class AssuntoMapper {
         return Assunto.builder()
                 .codigo(entity.getCodigo())
                 .descricao(entity.getDescricao())
-                .livros(entity.getLivros().stream()
-                        .map(livroMapper::toDomain)
-                        .collect(Collectors.toList()))
+                .livros(new ArrayList<>())
                 .build();
+    }
+
+    public AssuntoEntity updateRelationships(AssuntoEntity entity, Assunto assunto) {
+        if (entity == null || assunto == null) return entity;
+
+        entity.setLivros(new ArrayList<>());
+        return entity;
     }
 }
