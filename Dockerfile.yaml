@@ -1,0 +1,22 @@
+# Use the official Java 17 image as the base image
+FROM openjdk:17-jdk-slim
+  
+  # Set the working directory to /app
+WORKDIR /app
+  
+  # Copy the pom.xml and src directories
+COPY pom.xml .
+COPY src ./src
+  
+  # Install Maven
+RUN apt-get update && \
+apt-get install -y maven
+  
+  # Build the application
+RUN mvn clean package -DskipTests
+  
+  # Expose the port that the Spring Boot application will run on
+EXPOSE 8081
+  
+  # Set the command to start the Spring Boot application
+CMD ["java", "-jar", "target/*.jar"]
