@@ -1,17 +1,17 @@
 package com.br.spassu.api.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 
-import java.util.Set;
+import java.util.List;
 
-import jakarta.persistence.*;
-import lombok.Data;
-import java.util.HashSet;
-import java.util.Set;
-
+@Getter
+@Setter
+@Builder
 @Entity
 @Table(name = "Assunto")
-@Data
 public class AssuntoEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,5 +22,5 @@ public class AssuntoEntity {
     private String descricao;
 
     @ManyToMany(mappedBy = "assuntos")
-    private Set<LivroEntity> livros = new HashSet<>();
+    private List<LivroEntity> livros;
 }

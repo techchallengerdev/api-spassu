@@ -1,22 +1,26 @@
 package com.br.spassu.api.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import java.util.HashSet;
-import java.util.Set;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 
+import java.util.List;
+
+@Getter
+@Setter
+@Builder
 @Entity
-@Table(name = "Autor")
-@Data
+@Table(name = "Livro_Autor")
 public class AutorEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "CodAu")
+    @Column(name = "codAs")
     private Integer codigo;
 
-    @Column(name = "Nome", length = 40, nullable = false)
+    @Column(length = 40)
     private String nome;
 
     @ManyToMany(mappedBy = "autores")
-    private Set<LivroEntity> livros = new HashSet<>();
+    private List<LivroEntity> livros;
 }

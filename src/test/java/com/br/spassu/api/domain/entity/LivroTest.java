@@ -1,8 +1,11 @@
 package com.br.spassu.api.domain.entity;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import static org.assertj.core.api.Assertions.assertThat;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class LivroTest {
     private Livro livro;
@@ -11,62 +14,110 @@ class LivroTest {
 
     @BeforeEach
     void setUp() {
-        livro = new Livro();
-        livro.setCodigo(1);
-        livro.setTitulo("Clean Code");
-        livro.setEditora("Alta Books");
-        livro.setEdicao(1);
-        livro.setAnoPublicacao("2008");
+        livro = Livro.builder()
+                .codigo(1)
+                .titulo("Clean Code")
+                .editora("Alta Books")
+                .edicao(1)
+                .anoPublicacao("2008")
+                .build();
 
-        autor = new Autor();
-        autor.setCodigo(1);
-        autor.setNome("Robert C. Martin");
+        autor = Autor.builder()
+                .codigo(1)
+                .nome("Robert C. Martin")
+                .build();
 
-        assunto = new Assunto();
-        assunto.setCodigo(1);
-        assunto.setDescricao("Programação");
+        assunto = Assunto.builder()
+                .codigo(1)
+                .descricao("Programação")
+                .build();
     }
 
-    @Test
-    void deveInicializarLivroCorretamente() {
-        assertThat(livro.getCodigo()).isEqualTo(1);
-        assertThat(livro.getTitulo()).isEqualTo("Clean Code");
-        assertThat(livro.getEditora()).isEqualTo("Alta Books");
-        assertThat(livro.getEdicao()).isEqualTo(1);
-        assertThat(livro.getAnoPublicacao()).isEqualTo("2008");
-        assertThat(livro.getAutores()).isEmpty();
-        assertThat(livro.getAssuntos()).isEmpty();
+    @Nested
+    @DisplayName("Testes de relacionamento com Autor")
+    class RelacionamentoAutorTests {
+
+        @Test
+        @DisplayName("Deve adicionar autor corretamente")
+        void deveAdicionarAutorComSucesso() {
+            // Act
+            livro.adicionarAutor(autor);
+
+            // Assert
+            assertTrue(livro.getAutores().contains(autor));
+            assertTrue(autor.getLivros().contains(livro));
+            assertEquals(1, livro.getAutores().size());
+            assertEquals(1, autor.getLivros().size());
+        }
+
+        @Test
+        @DisplayName("Deve remover autor corretamente")
+        void deveRemoverAutorComSucesso() {
+            // Arrange
+            livro.adicionarAutor(autor);
+
+            // Act
+            livro.removerAutor(autor);
+
+            // Assert
+            assertFalse(livro.getAutores().contains(autor));
+            assertFalse(autor.getLivros().contains(livro));
+            assertTrue(livro.getAutores().isEmpty());
+            assertTrue(autor.getLivros().isEmpty());
+        }
     }
 
-    @Test
-    void deveAdicionarAutorCorretamente() {
-        livro.adicionarAutor(autor);
-        assertThat(livro.getAutores()).hasSize(1);
-        assertThat(livro.getAutores()).contains(autor);
-        assertThat(autor.getLivros()).contains(livro);
+    @Nested
+    @DisplayName("Testes de relacionamento com Assunto")
+    class RelacionamentoAssuntoTests {
+
+        @Test
+        @DisplayName("Deve adicionar assunto corretamente")
+        void deveAdicionarAssuntoComSucesso() {
+            // Act
+            livro.adicionarAssunto(assunto);
+
+            // Assert
+            assertTrue(livro.getAssuntos().contains(assunto));
+            assertTrue(assunto.getLivros().contains(livro));
+            assertEquals(1, livro.getAssuntos().size());
+            assertEquals(1, assunto.getLivros().size());
+        }
+
+        @Test
+        @DisplayName("Deve remover assunto corretamente")
+        void deveRemoverAssuntoComSucesso() {
+            // Arrange
+            livro.adicionarAssunto(assunto);
+
+            // Act
+            livro.removerAssunto(assunto);
+
+            // Assert
+            assertFalse(livro.getAssuntos().contains(assunto));
+            assertFalse(assunto.getLivros().contains(livro));
+            assertTrue(livro.getAssuntos().isEmpty());
+            assertTrue(assunto.getLivros().isEmpty());
+        }
     }
 
-    @Test
-    void deveRemoverAutorCorretamente() {
-        livro.adicionarAutor(autor);
-        livro.removerAutor(autor);
-        assertThat(livro.getAutores()).isEmpty();
-        assertThat(autor.getLivros()).isEmpty();
-    }
+    @Nested
+    @DisplayName("Testes de construção")
+    class ConstrucaoTests {
 
-    @Test
-    void deveAdicionarAssuntoCorretamente() {
-        livro.adicionarAssunto(assunto);
-        assertThat(livro.getAssuntos()).hasSize(1);
-        assertThat(livro.getAssuntos()).contains(assunto);
-        assertThat(assunto.getLivros()).contains(livro);
-    }
-
-    @Test
-    void deveRemoverAssuntoCorretamente() {
-        livro.adicionarAssunto(assunto);
-        livro.removerAssunto(assunto);
-        assertThat(livro.getAssuntos()).isEmpty();
-        assertThat(assunto.getLivros()).isEmpty();
+        @Test
+        @DisplayName("Deve criar livro com builder corretamente")
+        void deveCriarLivroComBuilder() {
+            // Assert
+            assertEquals(1, livro.getCodigo());
+            assertEquals("Clean Code", livro.getTitulo());
+            assertEquals("Alta Books", livro.getEditora());
+            assertEquals(1, livro.getEdicao());
+            assertEquals("2008", livro.getAnoPublicacao());
+            assertNotNull(livro.getAutores());
+            assertNotNull(livro.getAssuntos());
+            assertTrue(livro.getAutores().isEmpty());
+            assertTrue(livro.getAssuntos().isEmpty());
+        }
     }
 }

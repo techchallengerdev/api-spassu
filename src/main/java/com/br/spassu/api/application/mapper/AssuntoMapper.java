@@ -2,85 +2,66 @@ package com.br.spassu.api.application.mapper;
 
 import com.br.spassu.api.application.dto.AssuntoDTO;
 import com.br.spassu.api.domain.entity.Assunto;
+import com.br.spassu.api.domain.entity.Livro;
 import com.br.spassu.api.infrastructure.persistence.entity.AssuntoEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
 public class AssuntoMapper {
-
     private final LivroMapper livroMapper;
 
-    public AssuntoDTO toDTO(Assunto assunto) {
+    // Domain -> DTO
+    public AssuntoDTO toDto(Assunto assunto) {
         if (assunto == null) return null;
 
-        AssuntoDTO dto = new AssuntoDTO();
-        dto.setId(assunto.getCodigo());
-        dto.setDescricao(assunto.getDescricao());
-
-        if (assunto.getLivros() != null) {
-            dto.setLivros(
-                    assunto.getLivros().stream()
-                            .map(livroMapper::toResumoDTO)
-                            .collect(Collectors.toSet())
-            );
-        } else {
-            dto.setLivros(new HashSet<>());
-        }
-
-        return dto;
+        return AssuntoDTO.builder()
+                .codigo(assunto.getCodigo())
+                .descricao(assunto.getDescricao())
+                .livros(assunto.getLivros().stream()
+                        .map(Livro::getCodigo)
+                        .collect(Collectors.toList()))
+                .build();
     }
 
+    // DTO -> Domain
     public Assunto toDomain(AssuntoDTO dto) {
         if (dto == null) return null;
 
-        Assunto assunto = new Assunto();
-        assunto.setCodigo(dto.getId());
-        assunto.setDescricao(dto.getDescricao());
-        assunto.setLivros(new HashSet<>());
-
-        return assunto;
-    }
-
-    public Assunto toDomain(AssuntoEntity entity) {
-        if (entity == null) return null;
-
-        Assunto assunto = new Assunto();
-        assunto.setCodigo(entity.getCodigo());
-        assunto.setDescricao(entity.getDescricao());
-
-        if (entity.getLivros() != null) {
-            assunto.setLivros(
-                    entity.getLivros().stream()
-                            .map(livroMapper::toDomain)
-                            .collect(Collectors.toSet())
-            );
-        } else {
-            assunto.setLivros(new HashSet<>());
-        }
-
-        return assunto;
+        return Assunto.builder()
+                .codigo(dto.getCodigo())
+                .descricao(dto.getDescricao())
+                .livros(new ArrayList<>())  // Inicializa lista vazia
+                .build();
     }
 
     // Domain -> Entity
     public AssuntoEntity toEntity(Assunto assunto) {
         if (assunto == null) return null;
 
-        AssuntoEntity entity = new AssuntoEntity();
-        entity.setCodigo(assunto.getCodigo());
-        entity.setDescricao(assunto.getDescricao());
-        entity.setLivros(new HashSet<>());
-
-        return entity;
+        return AssuntoEntity.builder()
+                .codigo(assunto.getCodigo())
+                .descricao(assunto.getDescricao())
+                .livros(assunto.getLivros().stream()
+                        .map(livroMapper::toEntity)
+                        .collect(Collectors.toList()))
+                .build();
     }
 
-    public void updateEntity(AssuntoEntity entity, Assunto assunto) {
-        if (entity == null || assunto == null) return;
+    // Entity -> Domain
+    public Assunto toDomain(AssuntoEntity entity) {
+        if (entity == null) return null;
 
-        entity.setDescricao(assunto.getDescricao());
+        return Assunto.builder()
+                .codigo(entity.getCodigo())
+                .descricao(entity.getDescricao())
+                .livros(entity.getLivros().stream()
+                        .map(livroMapper::toDomain)
+                        .collect(Collectors.toList()))
+                .build();
     }
 }

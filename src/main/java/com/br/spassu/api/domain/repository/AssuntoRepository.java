@@ -6,14 +6,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface AssuntoRepository {
-
     Assunto save(Assunto assunto);
-
     Optional<Assunto> findByCodigo(Integer codigo);
-
     List<Assunto> findAll();
-
-    void deleteByCodigo(Integer codigo);
-
-    boolean existsByCodigo(Integer codigo);
+    void delete(Integer codAs);
 }

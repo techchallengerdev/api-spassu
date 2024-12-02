@@ -1,17 +1,19 @@
 package com.br.spassu.api.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import java.util.HashSet;
-import java.util.Set;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 
+import java.util.List;
+@Getter
+@Setter
 @Entity
+@Builder
 @Table(name = "Livro")
-@Data
 public class LivroEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "Livro_Cod")
+    @Column(name = "CodI")
     private Integer codigo;
 
     @Column(name = "Titulo", length = 40, nullable = false)
@@ -24,21 +26,21 @@ public class LivroEntity {
     private Integer edicao;
 
     @Column(name = "AnoPublicacao", length = 4)
-    private String anoPublicacao;
+    private Integer anoPublicacao;
 
     @ManyToMany
     @JoinTable(
             name = "Livro_Autor",
-            joinColumns = @JoinColumn(name = "Livro_Cod"),
+            joinColumns = @JoinColumn(name = "Livro_CodI"),
             inverseJoinColumns = @JoinColumn(name = "Autor_CodAu")
     )
-    private Set<AutorEntity> autores = new HashSet<>();
+    private List<AutorEntity> autores;
 
     @ManyToMany
     @JoinTable(
             name = "Livro_Assunto",
-            joinColumns = @JoinColumn(name = "Livro_Cod"),
+            joinColumns = @JoinColumn(name = "Livro_CodI"),
             inverseJoinColumns = @JoinColumn(name = "Assunto_codAs")
     )
-    private Set<AssuntoEntity> assuntos = new HashSet<>();
+    private List<AssuntoEntity> assuntos;
 }

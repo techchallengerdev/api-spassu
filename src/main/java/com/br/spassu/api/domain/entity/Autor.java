@@ -1,16 +1,20 @@
 package com.br.spassu.api.domain.entity;
 
-import lombok.Getter;
-import lombok.Setter;
-import java.util.HashSet;
-import java.util.Set;
+import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Autor {
     private Integer codigo;
     private String nome;
-    private Set<Livro> livros = new HashSet<>();
+    @Builder.Default
+    private List<Livro> livros = new ArrayList<>();
 
     public void adicionarLivro(Livro livro) {
         this.livros.add(livro);

@@ -1,8 +1,10 @@
 package com.br.spassu.api.domain.entity;
-
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class AutorTest {
     private Autor autor;
@@ -10,35 +12,61 @@ class AutorTest {
 
     @BeforeEach
     void setUp() {
-        autor = new Autor();
-        autor.setCodigo(1);
-        autor.setNome("Robert C. Martin");
+        autor = Autor.builder()
+                .codigo(1)
+                .nome("Robert C. Martin")
+                .build();
 
-        livro = new Livro();
-        livro.setCodigo(1);
-        livro.setTitulo("Clean Code");
+        livro = Livro.builder()
+                .codigo(1)
+                .titulo("Clean Code")
+                .editora("Alta Books")
+                .edicao(1)
+                .anoPublicacao("2008")
+                .build();
     }
 
-    @Test
-    void deveInicializarAutorCorretamente() {
-        assertThat(autor.getCodigo()).isEqualTo(1);
-        assertThat(autor.getNome()).isEqualTo("Robert C. Martin");
-        assertThat(autor.getLivros()).isEmpty();
+    @Nested
+    @DisplayName("Testes de relacionamento com Livro")
+    class RelacionamentoLivroTests {
+
+        @Test
+        @DisplayName("Deve adicionar livro corretamente")
+        void deveAdicionarLivroComSucesso() {
+            autor.adicionarLivro(livro);
+
+            assertTrue(autor.getLivros().contains(livro));
+            assertTrue(livro.getAutores().contains(autor));
+            assertEquals(1, autor.getLivros().size());
+            assertEquals(1, livro.getAutores().size());
+        }
+
+        @Test
+        @DisplayName("Deve remover livro corretamente")
+        void deveRemoverLivroComSucesso() {
+            autor.adicionarLivro(livro);
+
+            autor.removerLivro(livro);
+
+            assertFalse(autor.getLivros().contains(livro));
+            assertFalse(livro.getAutores().contains(autor));
+            assertTrue(autor.getLivros().isEmpty());
+            assertTrue(livro.getAutores().isEmpty());
+        }
     }
 
-    @Test
-    void deveAdicionarLivroCorretamente() {
-        autor.adicionarLivro(livro);
-        assertThat(autor.getLivros()).hasSize(1);
-        assertThat(autor.getLivros()).contains(livro);
-        assertThat(livro.getAutores()).contains(autor);
-    }
+    @Nested
+    @DisplayName("Testes de construção")
+    class ConstrucaoTests {
 
-    @Test
-    void deveRemoverLivroCorretamente() {
-        autor.adicionarLivro(livro);
-        autor.removerLivro(livro);
-        assertThat(autor.getLivros()).isEmpty();
-        assertThat(livro.getAutores()).isEmpty();
+        @Test
+        @DisplayName("Deve criar autor com builder corretamente")
+        void deveCriarAutorComBuilder() {
+
+            assertEquals(1, autor.getCodigo());
+            assertEquals("Robert C. Martin", autor.getNome());
+            assertNotNull(autor.getLivros());
+            assertTrue(autor.getLivros().isEmpty());
+        }
     }
 }
