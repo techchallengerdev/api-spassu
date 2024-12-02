@@ -5,6 +5,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class AssuntoTest {
@@ -13,31 +15,55 @@ class AssuntoTest {
 
     @BeforeEach
     void setUp() {
-        assunto = Assunto.builder()
-                .codigo(1)
-                .descricao("Programação")
-                .build();
-
-        livro = Livro.builder()
-                .codigo(1)
-                .titulo("Clean Code")
-                .editora("Alta Books")
-                .edicao(1)
-                .anoPublicacao("2008")
-                .build();
+        assunto = new Assunto();
+        livro = new Livro();
     }
 
     @Nested
-    @DisplayName("Testes de relacionamento com Livro")
-    class RelacionamentoLivroTests {
+    @DisplayName("Testes de Builder")
+    class BuilderTests {
+        @Test
+        @DisplayName("Deve criar assunto usando builder")
+        void deveCriarAssuntoBuilder() {
+            assunto = Assunto.builder()
+                    .codigo(1)
+                    .descricao("Programação")
+                    .livros(List.of(builderLivro()))
+                    .build();
+
+            assertEquals(1, assunto.getCodigo());
+            assertEquals("Programação", assunto.getDescricao());
+            assertNotNull(assunto.getLivros());
+            assertFalse(assunto.getLivros().isEmpty());
+        }
 
         @Test
-        @DisplayName("Deve adicionar livro corretamente")
-        void deveAdicionarLivroComSucesso() {
-            // Act
+        @DisplayName("Deve criar assunto com lista vazia quando não especificada")
+        void deveCriarAssuntoComListaVazia() {
+            assunto = Assunto.builder().build();
+            assertNotNull(assunto.getLivros());
+            assertTrue(assunto.getLivros().isEmpty());
+        }
+
+        @Test
+        @DisplayName("Deve permitir setters")
+        void devePermitirSetters() {
+            assunto.setCodigo(1);
+            assunto.setDescricao("Programação");
+
+            assertEquals(1, assunto.getCodigo());
+            assertEquals("Programação", assunto.getDescricao());
+        }
+    }
+
+    @Nested
+    @DisplayName("Testes de Relacionamentos")
+    class RelacionamentoTests {
+        @Test
+        @DisplayName("Deve adicionar livro")
+        void deveAdicionarLivro() {
             assunto.adicionarLivro(livro);
 
-            // Assert
             assertTrue(assunto.getLivros().contains(livro));
             assertTrue(livro.getAssuntos().contains(assunto));
             assertEquals(1, assunto.getLivros().size());
@@ -45,15 +71,11 @@ class AssuntoTest {
         }
 
         @Test
-        @DisplayName("Deve remover livro corretamente")
-        void deveRemoverLivroComSucesso() {
-            // Arrange
+        @DisplayName("Deve remover livro")
+        void deveRemoverLivro() {
             assunto.adicionarLivro(livro);
-
-            // Act
             assunto.removerLivro(livro);
 
-            // Assert
             assertFalse(assunto.getLivros().contains(livro));
             assertFalse(livro.getAssuntos().contains(assunto));
             assertTrue(assunto.getLivros().isEmpty());
@@ -61,18 +83,13 @@ class AssuntoTest {
         }
     }
 
-    @Nested
-    @DisplayName("Testes de construção")
-    class ConstrucaoTests {
-
-        @Test
-        @DisplayName("Deve criar assunto com builder corretamente")
-        void deveCriarAssuntoComBuilder() {
-            // Assert
-            assertEquals(1, assunto.getCodigo());
-            assertEquals("Programação", assunto.getDescricao());
-            assertNotNull(assunto.getLivros());
-            assertTrue(assunto.getLivros().isEmpty());
-        }
+    private Livro builderLivro(){
+        return livro = Livro.builder()
+                .codigo(1)
+                .titulo("Clean Code")
+                .editora("Alta Books")
+                .edicao(1)
+                .anoPublicacao("2008")
+                .build();
     }
 }
