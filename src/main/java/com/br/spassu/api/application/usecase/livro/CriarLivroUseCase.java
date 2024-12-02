@@ -51,7 +51,7 @@ public class CriarLivroUseCase {
                 .build();
     }
 
-    private void validarDadosEntrada(LivroDTO dto) {
+    void validarDadosEntrada(LivroDTO dto) {
         if (dto == null) {
             throw new BusinessException("Dados do livro não informados");
         }
@@ -76,7 +76,7 @@ public class CriarLivroUseCase {
                 .collect(Collectors.toList());
     }
 
-    private void validarAutores(List<Autor> autores) {
+    void validarAutores(List<Autor> autores) {
         if (autores.isEmpty()) {
             throw new BusinessException("É necessário informar pelo menos um autor válido");
         }
@@ -92,7 +92,7 @@ public class CriarLivroUseCase {
                 .collect(Collectors.toList());
     }
 
-    private void validarAssuntos(List<Assunto> assuntos) {
+    void validarAssuntos(List<Assunto> assuntos) {
         if (assuntos.isEmpty()) {
             throw new BusinessException("É necessário informar pelo menos um assunto válido");
         }
