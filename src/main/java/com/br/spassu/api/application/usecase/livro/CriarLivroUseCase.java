@@ -56,7 +56,7 @@ public class CriarLivroUseCase {
             throw new BusinessException("Dados do livro não informados");
         }
         if (dto.getTitulo() == null || dto.getTitulo().trim().isEmpty()) {
-            throw new BusinessException("Título do livro é obrigatório");
+            throw new BusinessException("Título é obrigatório");
         }
         if (dto.getAutorCodAus() == null || dto.getAutorCodAus().isEmpty()) {
             throw new BusinessException("É necessário informar pelo menos um autor");
