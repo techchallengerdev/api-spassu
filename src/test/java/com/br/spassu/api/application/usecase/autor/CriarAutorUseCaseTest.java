@@ -1,75 +1,82 @@
-//package com.br.spassu.api.application.usecase.autor;
-//
-//import com.br.spassu.api.application.dto.AutorDTO;
-//import com.br.spassu.api.application.mapper.AutorMapper;
-//import com.br.spassu.api.domain.entity.Autor;
-//import com.br.spassu.api.domain.repository.AutorRepository;
-//import org.junit.jupiter.api.DisplayName;
-//import org.junit.jupiter.api.Nested;
-//import org.junit.jupiter.api.Test;
-//import org.junit.jupiter.api.extension.ExtendWith;
-//import org.mockito.InjectMocks;
-//import org.mockito.Mock;
-//import org.mockito.junit.jupiter.MockitoExtension;
-//
-//import static org.assertj.core.api.Assertions.assertThat;
-//import static org.mockito.ArgumentMatchers.any;
-//import static org.mockito.Mockito.verify;
-//import static org.mockito.Mockito.when;
-//
-//@ExtendWith(MockitoExtension.class)
-//@DisplayName("Testes para CriarAutorUseCase")
-//class CriarAutorUseCaseTest {
-//
-//    @Mock
-//    private AutorRepository autorRepository;
-//
-//    @Mock
-//    private AutorMapper autorMapper;
-//
-//    @InjectMocks
-//    private CriarAutorUseCase criarAutorUseCase;
-//
-//    @Nested
-//    @DisplayName("Testes de sucesso")
-//    class SucessoTests {
-//
-//        @Test
-//        @DisplayName("Deve criar autor com sucesso")
-//        void deveCriarAutorComSucesso() {
-//            // given
-//            AutorDTO dto = new AutorDTO();
-//            dto.setNome("Robert C. Martin");
-//
-//            Autor autor = new Autor();
-//            autor.setNome("Robert C. Martin");
-//
-//            Autor autorSalvo = new Autor();
-//            autorSalvo.setCodigo(1);
-//            autorSalvo.setNome("Robert C. Martin");
-//
-//            AutorDTO dtoSalvo = new AutorDTO();
-//            dtoSalvo.setId(1);
-//            dtoSalvo.setNome("Robert C. Martin");
-//
-//            when(autorMapper.toDomain(dto)).thenReturn(autor);
-//            when(autorRepository.save(autor)).thenReturn(autorSalvo);
-//            when(autorMapper.toDTO(autorSalvo)).thenReturn(dtoSalvo);
-//
-//            // when
-//            AutorDTO resultado = criarAutorUseCase.execute(dto);
-//
-//            // then
-//            assertThat(resultado)
-//                    .isNotNull()
-//                    .satisfies(r -> {
-//                        assertThat(r.getId()).isEqualTo(1);
-//                        assertThat(r.getNome()).isEqualTo("Robert C. Martin");
-//                    });
-//
-//            verify(autorMapper).toDomain(dto);
-//            verify(autorRepository).save(any(Autor.class));
-//            verify(autorMapper).toDTO(any(Autor.class));
-//        }
-//    }
-//}
+package com.br.spassu.api.application.usecase.autor;
+
+import com.br.spassu.api.application.dto.AutorDTO;
+import com.br.spassu.api.application.mapper.AutorMapper;
+import com.br.spassu.api.domain.entity.Autor;
+import com.br.spassu.api.domain.exceptions.BusinessException;
+import com.br.spassu.api.domain.repository.AutorRepository;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+
+class CriarAutorUseCaseTest {
+
+    @Mock
+    private AutorRepository autorRepository;
+
+    @Mock
+    private AutorMapper autorMapper;
+
+    @InjectMocks
+    private CriarAutorUseCase useCase;
+
+    @BeforeEach
+    void setup() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Nested
+    @DisplayName("Testes de sucesso")
+    class SucessoTests {
+
+        @Test
+        @DisplayName("Deve criar um novo autor com sucesso")
+        void deveCriarAutorComSucesso() {
+            // Arrange
+            AutorDTO autorDTO = AutorDTO.builder()
+                    .nome("Autor de Teste")
+                    .build();
+
+            Autor autor = Autor.builder()
+                    .nome("Autor de Teste")
+                    .build();
+
+            Mockito.when(autorRepository.save(Mockito.any(Autor.class))).thenReturn(autor);
+            Mockito.when(autorMapper.toDto(Mockito.any(Autor.class))).thenReturn(autorDTO);
+
+            // Act
+            AutorDTO resultado = useCase.execute(autorDTO);
+
+            // Assert
+            Assertions.assertNotNull(resultado);
+            Assertions.assertEquals(autorDTO.getNome(), resultado.getNome());
+        }
+    }
+
+    @Nested
+    @DisplayName("Testes de validação")
+    class ValidacaoTests {
+
+        @Test
+        @DisplayName("Deve lançar exceção quando DTO for nulo")
+        void deveLancarExcecaoQuandoDtoNulo() {
+            Assertions.assertThrows(BusinessException.class, () -> useCase.execute(null));
+        }
+
+        @Test
+        @DisplayName("Deve lançar exceção quando nome for nulo ou vazio")
+        void deveLancarExcecaoQuandoNomeNuloOuVazio() {
+            AutorDTO autorDTO = AutorDTO.builder()
+                    .nome(null)
+                    .build();
+
+            Assertions.assertThrows(BusinessException.class, () -> useCase.execute(autorDTO));
+        }
+    }
+}

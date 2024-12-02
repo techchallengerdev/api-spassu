@@ -1,74 +1,92 @@
-//package com.br.spassu.api.application.usecase.autor;
-//
-//import com.br.spassu.api.application.dto.AutorDTO;
-//import com.br.spassu.api.application.mapper.AutorMapper;
-//import com.br.spassu.api.domain.entity.Autor;
-//import com.br.spassu.api.domain.exceptions.EntityNotFoundException;
-//import com.br.spassu.api.domain.repository.AutorRepository;
-//import org.junit.jupiter.api.Test;
-//import org.junit.jupiter.api.extension.ExtendWith;
-//import org.mockito.InjectMocks;
-//import org.mockito.Mock;
-//import org.mockito.junit.jupiter.MockitoExtension;
-//
-//import java.util.Optional;
-//
-//import static org.assertj.core.api.Assertions.assertThat;
-//import static org.assertj.core.api.Assertions.assertThatThrownBy;
-//import static org.mockito.Mockito.when;
-//
-//@ExtendWith(MockitoExtension.class)
-//class BuscarAutorUseCaseTest {
-//
-//    @Mock
-//    private AutorRepository autorRepository;
-//
-//    @Mock
-//    private AutorMapper autorMapper;
-//
-//    @InjectMocks
-//    private BuscarAutorUseCase buscarAutorUseCase;
-//
-//    @Test
-//    void deveBuscarAutorComSucesso() {
-//        Integer id = 1;
-//        Autor autor = criarAutor();
-//        AutorDTO autorDTO = criarAutorDTO();
-//
-//        when(autorRepository.findByCodigo(id)).thenReturn(Optional.of(autor));
-//        when(autorMapper.toDTO(autor)).thenReturn(autorDTO);
-//
-//        AutorDTO resultado = buscarAutorUseCase.execute(id);
-//
-//        assertThat(resultado)
-//                .isNotNull()
-//                .satisfies(dto -> {
-//                    assertThat(dto.getId()).isEqualTo(id);
-//                    assertThat(dto.getNome()).isEqualTo("Robert C. Martin");
-//                });
-//    }
-//
-//    @Test
-//    void deveLancarExcecaoQuandoAutorNaoEncontrado() {
-//        Integer id = 1;
-//        when(autorRepository.findByCodigo(id)).thenReturn(Optional.empty());
-//
-//        assertThatThrownBy(() -> buscarAutorUseCase.execute(id))
-//                .isInstanceOf(EntityNotFoundException.class)
-//                .hasMessage("Autor não encontrado");
-//    }
-//
-//    private AutorDTO criarAutorDTO() {
-//        AutorDTO dto = new AutorDTO();
-//        dto.setId(1);
-//        dto.setNome("Robert C. Martin");
-//        return dto;
-//    }
-//
-//    private Autor criarAutor() {
-//        Autor autor = new Autor();
-//        autor.setCodigo(1);
-//        autor.setNome("Robert C. Martin");
-//        return autor;
-//    }
-//}
+package com.br.spassu.api.application.usecase.autor;
+
+import com.br.spassu.api.application.dto.AutorDTO;
+import com.br.spassu.api.application.mapper.AutorMapper;
+import com.br.spassu.api.domain.entity.Autor;
+import com.br.spassu.api.domain.exceptions.BusinessException;
+import com.br.spassu.api.domain.exceptions.EntityNotFoundException;
+import com.br.spassu.api.domain.repository.AutorRepository;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+
+import java.util.Optional;
+
+class BuscarAutorUseCaseTest {
+
+    @Mock
+    private AutorRepository autorRepository;
+
+    @Mock
+    private AutorMapper autorMapper;
+
+    @InjectMocks
+    private BuscarAutorUseCase useCase;
+
+    @BeforeEach
+    void setup() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Nested
+    @DisplayName("Testes de sucesso")
+    class SucessoTests {
+
+        @Test
+        @DisplayName("Deve buscar um autor com sucesso")
+        void deveBuscarAutorComSucesso() {
+            // Arrange
+            Autor autor = Autor.builder()
+                    .codigo(1)
+                    .nome("Autor de Teste")
+                    .build();
+
+            AutorDTO autorDTO = AutorDTO.builder()
+                    .codigo(1)
+                    .nome("Autor de Teste")
+                    .build();
+
+            Mockito.when(autorRepository.findByCodigo(1)).thenReturn(Optional.of(autor));
+            Mockito.when(autorMapper.toDto(Mockito.any(Autor.class))).thenReturn(autorDTO);
+
+            // Act
+            AutorDTO resultado = useCase.execute(1);
+
+            // Assert
+            Assertions.assertNotNull(resultado);
+            Assertions.assertEquals(autor.getCodigo(), resultado.getCodigo());
+            Assertions.assertEquals(autor.getNome(), resultado.getNome());
+        }
+    }
+
+    @Nested
+    @DisplayName("Testes de validação")
+    class ValidacaoTests {
+
+        @Test
+        @DisplayName("Deve lançar exceção quando código for nulo")
+        void deveLancarExcecaoQuandoCodigoNulo() {
+            Assertions.assertThrows(BusinessException.class, () -> useCase.execute(null));
+        }
+
+        @Test
+        @DisplayName("Deve lançar exceção quando código for inválido")
+        void deveLancarExcecaoQuandoCodigoInvalido() {
+            Assertions.assertThrows(BusinessException.class, () -> useCase.execute(0));
+        }
+
+        @Test
+        @DisplayName("Deve lançar exceção quando autor não for encontrado")
+        void deveLancarExcecaoQuandoAutorNaoEncontrado() {
+            Mockito.when(autorRepository.findByCodigo(1)).thenReturn(Optional.empty());
+
+            Assertions.assertThrows(EntityNotFoundException.class, () -> useCase.execute(1));
+        }
+    }
+}
