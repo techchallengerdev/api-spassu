@@ -19,9 +19,7 @@ public class BuscarLivroUseCase {
     @Transactional(readOnly = true)
     public LivroDTO execute(Integer codigo) {
         validarDadosEntrada(codigo);
-
         Livro livro = buscarLivro(codigo);
-
         return livroMapper.toDto(livro);
     }
 

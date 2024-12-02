@@ -43,7 +43,7 @@ public class AtualizarLivroUseCase {
         return livroMapper.toDto(livroAtualizado);
     }
 
-    private void validarDadosEntrada(Integer codigo, LivroDTO dto) {
+    void validarDadosEntrada(Integer codigo, LivroDTO dto) {
         if (codigo == null) {
             throw new BusinessException("Código do livro não informado");
         }
@@ -80,7 +80,7 @@ public class AtualizarLivroUseCase {
                 .collect(Collectors.toList());
     }
 
-    private void validarAutores(List<Autor> autores) {
+    void validarAutores(List<Autor> autores) {
         if (autores.isEmpty()) {
             throw new BusinessException("É necessário informar pelo menos um autor válido");
         }
@@ -96,7 +96,7 @@ public class AtualizarLivroUseCase {
                 .collect(Collectors.toList());
     }
 
-    private void validarAssuntos(List<Assunto> assuntos) {
+    void validarAssuntos(List<Assunto> assuntos) {
         if (assuntos.isEmpty()) {
             throw new BusinessException("É necessário informar pelo menos um assunto válido");
         }

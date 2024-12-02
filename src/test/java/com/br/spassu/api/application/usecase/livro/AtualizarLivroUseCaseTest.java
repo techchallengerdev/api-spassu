@@ -10,21 +10,21 @@ import com.br.spassu.api.domain.exceptions.EntityNotFoundException;
 import com.br.spassu.api.domain.repository.AssuntoRepository;
 import com.br.spassu.api.domain.repository.AutorRepository;
 import com.br.spassu.api.domain.repository.LivroRepository;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AtualizarLivroUseCaseTest {
@@ -145,6 +145,158 @@ class AtualizarLivroUseCaseTest {
             BusinessException exception = assertThrows(BusinessException.class,
                     () -> useCase.execute(1, livroDTO));
             assertEquals("Título do livro é obrigatório", exception.getMessage());
+        }
+
+        @Test
+        @DisplayName("Deve lançar exceção quando código for nulo")
+        void testeExecute_QuandoCodigoForNulo() {
+            LivroDTO livroDTO = LivroDTO.builder()
+                    .titulo("Livro de Teste")
+                    .autorCodAus(Arrays.asList(1, 2))
+                    .assuntoCodAss(Arrays.asList(3, 4))
+                    .build();
+
+            Assertions.assertThrows(BusinessException.class, () -> useCase.execute(null, livroDTO));
+        }
+
+        @Test
+        @DisplayName("Deve lançar exceção quando código for negativo")
+        void testeExecute_QuandoCodigoForNegativo() {
+            LivroDTO livroDTO = LivroDTO.builder()
+                    .titulo("Livro de Teste")
+                    .autorCodAus(Arrays.asList(1, 2))
+                    .assuntoCodAss(Arrays.asList(3, 4))
+                    .build();
+
+            Assertions.assertThrows(BusinessException.class, () -> useCase.execute(-1, livroDTO));
+        }
+
+        @Test
+        @DisplayName("Deve lançar exceção quando DTO for null")
+        void testeExecute_QuandoDtoForNulo() {
+            Assertions.assertThrows(BusinessException.class, () -> useCase.execute(1, null));
+        }
+
+        @Test
+        @DisplayName("Deve lançar exceção quando título for null ou vazio")
+        void testeExecute_QuandoTituloForNuloOuVazio() {
+            LivroDTO livroDTO = LivroDTO.builder()
+                    .autorCodAus(Arrays.asList(1, 2))
+                    .assuntoCodAss(Arrays.asList(3, 4))
+                    .build();
+
+            Assertions.assertThrows(BusinessException.class, () -> useCase.execute(1, livroDTO));
+        }
+
+        @Test
+        @DisplayName("Deve lançar exceção quando a lista de autores for null ou vazia")
+        void testeExecute_QuandoListaDeAutoresForNulaOuVazia() {
+            LivroDTO livroDTO = LivroDTO.builder()
+                    .titulo("Livro de Teste")
+                    .assuntoCodAss(Arrays.asList(3, 4))
+                    .build();
+
+            Assertions.assertThrows(BusinessException.class, () -> useCase.execute(1, livroDTO));
+        }
+
+        @Test
+        @DisplayName("Deve lançar exceção quando a lista de assuntos for null ou vazia")
+        void testeExecute_QuandoListaDeAssuntosForNulaOuVazia() {
+            LivroDTO livroDTO = LivroDTO.builder()
+                    .titulo("Livro de Teste")
+                    .autorCodAus(Arrays.asList(1, 2))
+                    .build();
+
+            Assertions.assertThrows(BusinessException.class, () -> useCase.execute(1, livroDTO));
+        }
+
+        @Test
+        @DisplayName("Deve lançar exceção quando a lista de autores estiver vazia")
+        void testeValidarAutores_QuandoListaDeAutoresEstaVazia() {
+            List<Autor> autores = Collections.emptyList();
+
+            Assertions.assertThrows(BusinessException.class, () -> {
+                useCase.validarAutores(autores);
+            });
+        }
+
+        @Test
+        @DisplayName("Deve lançar exceção quando a lista de assuntos estiver vazia")
+        void testeValidarAssuntos_QuandoListaDeAssuntosEstaVazia() {
+            List<Assunto> assuntos = Collections.emptyList();
+
+            Assertions.assertThrows(BusinessException.class, () -> {
+                useCase.validarAssuntos(assuntos);
+            });
+        }
+
+        @Test
+        void testeValidarDadosEntrada_QuandoCodigoForNulo() {
+            LivroDTO livroDTO = LivroDTO.builder()
+                    .titulo("Livro de Teste")
+                    .autorCodAus(Arrays.asList(1, 2))
+                    .assuntoCodAss(Arrays.asList(3, 4))
+                    .build();
+
+            Assertions.assertThrows(BusinessException.class, () -> {
+                useCase.validarDadosEntrada(null, livroDTO);
+            });
+        }
+
+        @Test
+        void testeValidarDadosEntrada_QuandoCodigoForNegativo() {
+            LivroDTO livroDTO = LivroDTO.builder()
+                    .titulo("Livro de Teste")
+                    .autorCodAus(Arrays.asList(1, 2))
+                    .assuntoCodAss(Arrays.asList(3, 4))
+                    .build();
+
+            Assertions.assertThrows(BusinessException.class, () -> {
+                useCase.validarDadosEntrada(-1, livroDTO);
+            });
+        }
+
+        @Test
+        void testeValidarDadosEntrada_QuandoDtoForNulo() {
+            Assertions.assertThrows(BusinessException.class, () -> {
+                useCase.validarDadosEntrada(1, null);
+            });
+        }
+
+        @Test
+        void testeValidarDadosEntrada_QuandoTituloForNuloOuVazio() {
+            LivroDTO livroDTO = LivroDTO.builder()
+                    .autorCodAus(Arrays.asList(1, 2))
+                    .assuntoCodAss(Arrays.asList(3, 4))
+                    .build();
+
+            Assertions.assertThrows(BusinessException.class, () -> {
+                useCase.validarDadosEntrada(1, livroDTO);
+            });
+        }
+
+        @Test
+        void testeValidarDadosEntrada_QuandoListaDeAutoresForNulaOuVazia() {
+            LivroDTO livroDTO = LivroDTO.builder()
+                    .titulo("Livro de Teste")
+                    .assuntoCodAss(Arrays.asList(3, 4))
+                    .build();
+
+            Assertions.assertThrows(BusinessException.class, () -> {
+                useCase.validarDadosEntrada(1, livroDTO);
+            });
+        }
+
+        @Test
+        void testeValidarDadosEntrada_QuandoListaDeAssuntosForNulaOuVazia() {
+            LivroDTO livroDTO = LivroDTO.builder()
+                    .titulo("Livro de Teste")
+                    .autorCodAus(Arrays.asList(1, 2))
+                    .build();
+
+            Assertions.assertThrows(BusinessException.class, () -> {
+                useCase.validarDadosEntrada(1, livroDTO);
+            });
         }
     }
 
