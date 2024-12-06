@@ -1,5 +1,7 @@
 package com.br.spassu.api.application.mapper;
 
+import com.br.spassu.api.application.dto.LivroAssuntoDTO;
+import com.br.spassu.api.application.dto.LivroAutorDTO;
 import com.br.spassu.api.application.dto.LivroDTO;
 import com.br.spassu.api.domain.entity.Assunto;
 import com.br.spassu.api.domain.entity.Autor;
@@ -26,11 +28,25 @@ public class LivroMapper {
                 .editora(livro.getEditora())
                 .edicao(livro.getEdicao())
                 .anoPublicacao(livro.getAnoPublicacao())
+                // Para request
                 .autorCodAus(livro.getAutores().stream()
                         .map(Autor::getCodigo)
                         .collect(Collectors.toList()))
                 .assuntoCodAss(livro.getAssuntos().stream()
                         .map(Assunto::getCodigo)
+                        .collect(Collectors.toList()))
+                // Para response
+                .autores(livro.getAutores().stream()
+                        .map(autor -> LivroAutorDTO.builder()
+                                .codigo(autor.getCodigo())
+                                .nome(autor.getNome())
+                                .build())
+                        .collect(Collectors.toList()))
+                .assuntos(livro.getAssuntos().stream()
+                        .map(assunto -> LivroAssuntoDTO.builder()
+                                .codigo(assunto.getCodigo())
+                                .descricao(assunto.getDescricao())
+                                .build())
                         .collect(Collectors.toList()))
                 .build();
     }

@@ -27,4 +27,7 @@ public class LivroDTO {
 
     private List<Integer> autorCodAus;
     private List<Integer> assuntoCodAss;
+
+    private List<LivroAutorDTO> autores;
+    private List<LivroAssuntoDTO> assuntos;
 }
