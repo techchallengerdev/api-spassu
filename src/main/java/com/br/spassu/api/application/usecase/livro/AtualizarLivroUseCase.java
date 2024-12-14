@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,7 +28,7 @@ public class AtualizarLivroUseCase {
 
     @Transactional
     public LivroDTO execute(Integer codigo, LivroDTO dto) {
-        validarDadosEntrada(codigo, dto);
+        validarDadosEntrada(dto);
 
         Livro livroExistente = buscarLivro(codigo);
 
@@ -43,24 +44,45 @@ public class AtualizarLivroUseCase {
         return livroMapper.toDto(livroAtualizado);
     }
 
-    void validarDadosEntrada(Integer codigo, LivroDTO dto) {
-        if (codigo == null) {
-            throw new BusinessException("Código do livro não informado");
+    void validarDadosEntrada(LivroDTO livroDTO) {
+        List<String> erros = new ArrayList<>();
+
+        if (livroDTO.getCodigo() == null || livroDTO.getCodigo() <= 0) {
+            erros.add("O código do livro deve ser maior que zero");
         }
-        if (codigo <= 0) {
-            throw new BusinessException("Código do livro deve ser maior que zero");
+
+        if (livroDTO.getTitulo() == null || livroDTO.getTitulo().isEmpty()) {
+            erros.add("O título do livro é obrigatório");
         }
-        if (dto == null) {
-            throw new BusinessException("Dados do livro não informados");
+
+        if (livroDTO.getEditora() == null || livroDTO.getEditora().isEmpty()) {
+            erros.add("A editora do livro é obrigatória");
         }
-        if (dto.getTitulo() == null || dto.getTitulo().trim().isEmpty()) {
-            throw new BusinessException("Título do livro é obrigatório");
+
+        if (livroDTO.getEdicao() == null || livroDTO.getEdicao() < 0) {
+            erros.add("A edição do livro deve ser maior ou igual a zero");
         }
-        if (dto.getAutorCodAus() == null || dto.getAutorCodAus().isEmpty()) {
-            throw new BusinessException("É necessário informar pelo menos um autor");
+
+        if (livroDTO.getAnoPublicacao() == null || livroDTO.getAnoPublicacao().isEmpty()) {
+            erros.add("O ano de publicação do livro é obrigatório");
+        } else {
+            try {
+                Integer.parseInt(livroDTO.getAnoPublicacao());
+            } catch (NumberFormatException e) {
+                erros.add("O ano de publicação do livro deve ser um número válido");
+            }
         }
-        if (dto.getAssuntoCodAss() == null || dto.getAssuntoCodAss().isEmpty()) {
-            throw new BusinessException("É necessário informar pelo menos um assunto");
+
+        if (livroDTO.getAutorCodAus() == null || livroDTO.getAutorCodAus().isEmpty()) {
+            erros.add("O livro deve ter pelo menos um autor");
+        }
+
+        if (livroDTO.getAssuntoCodAss() == null || livroDTO.getAssuntoCodAss().isEmpty()) {
+            erros.add("O livro deve ter pelo menos um assunto");
+        }
+
+        if (!erros.isEmpty()) {
+            throw new BusinessException(String.join(", ", erros));
         }
     }
 

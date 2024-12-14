@@ -1,5 +1,6 @@
 package com.br.spassu.api.domain.entity;
 
+import com.br.spassu.api.domain.exceptions.BusinessException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -86,15 +87,32 @@ class LivroTest {
         }
 
         @Test
-        @DisplayName("Deve remover autor")
-        void deveRemoverAutor() {
-            livro.adicionarAutor(autor);
-            livro.removerAutor(autor);
+        @DisplayName("Deve remover autor quando houver mais de um")
+        void deveRemoverAutorQuandoHouverMaisDeUm() {
+            Livro livro = new Livro();
+            Autor autor1 = new Autor();
+            Autor autor2 = new Autor();
+            livro.adicionarAutor(autor1);
+            livro.adicionarAutor(autor2);
 
-            assertFalse(livro.getAutores().contains(autor));
-            assertFalse(autor.getLivros().contains(livro));
-            assertTrue(livro.getAutores().isEmpty());
-            assertTrue(autor.getLivros().isEmpty());
+            livro.removerAutor(autor1);
+
+            assertFalse(livro.getAutores().contains(autor1));
+            assertTrue(livro.getAutores().contains(autor2));
+            assertFalse(autor1.getLivros().contains(livro));
+            assertTrue(autor2.getLivros().contains(livro));
+        }
+
+        @Test
+        @DisplayName("Não deve remover o único autor do livro")
+        void naoDeveRemoverUnicoAutor() {
+            Livro livro = new Livro();
+            Autor autor = new Autor();
+            livro.adicionarAutor(autor);
+
+            assertThrows(BusinessException.class, () -> livro.removerAutor(autor));
+            assertTrue(livro.getAutores().contains(autor));
+            assertTrue(autor.getLivros().contains(livro));
         }
 
         @Test
@@ -111,13 +129,32 @@ class LivroTest {
         @Test
         @DisplayName("Deve remover assunto")
         void deveRemoverAssunto() {
-            livro.adicionarAssunto(assunto);
-            livro.removerAssunto(assunto);
+            Livro livro = new Livro();
+            Assunto assunto1 = new Assunto();
+            Assunto assunto2 = new Assunto();
+            livro.adicionarAssunto(assunto1);
+            livro.adicionarAssunto(assunto2);
 
-            assertFalse(livro.getAssuntos().contains(assunto));
-            assertFalse(assunto.getLivros().contains(livro));
-            assertTrue(livro.getAssuntos().isEmpty());
-            assertTrue(assunto.getLivros().isEmpty());
+            livro.removerAssunto(assunto1);
+
+            assertFalse(livro.getAssuntos().contains(assunto1));
+            assertTrue(livro.getAssuntos().contains(assunto2));
+            assertFalse(assunto1.getLivros().contains(livro));
+            assertTrue(assunto2.getLivros().contains(livro));
+            assertEquals(1, livro.getAssuntos().size());
+            assertEquals(1, assunto2.getLivros().size());
+        }
+
+        @Test
+        @DisplayName("Não deve remover o único assunto do livro")
+        void naoDeveRemoverUnicoAssunto() {
+            Livro livro = new Livro();
+            Assunto assunto = new Assunto();
+            livro.adicionarAssunto(assunto);
+
+            assertThrows(BusinessException.class, () -> livro.removerAssunto(assunto));
+            assertTrue(livro.getAssuntos().contains(assunto));
+            assertTrue(assunto.getLivros().contains(livro));
         }
     }
 }

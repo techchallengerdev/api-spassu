@@ -2,10 +2,10 @@ package com.br.spassu.api.infrastructure.controller;
 
 import com.br.spassu.api.application.dto.LivroDTO;
 import com.br.spassu.api.application.usecase.livro.*;
-import com.br.spassu.api.domain.exceptions.BusinessException;
 import com.br.spassu.api.domain.exceptions.EntityNotFoundException;
-import org.junit.jupiter.api.BeforeEach;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -13,222 +13,380 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.test.web.servlet.ResultActions;
+
+import static org.hamcrest.Matchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Arrays;
 import java.util.List;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@DisplayName("Testes do Controller de Livros")
 class LivroControllerTest {
 
+    private static final String BASE_URL = "/api/v1/livros";
+
     @Autowired
-    MockMvc mockMvc;
+    private MockMvc mockMvc;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @MockBean
-    CriarLivroUseCase criarLivroUseCase;
+    private CriarLivroUseCase criarLivroUseCase;
+    @MockBean
+    private BuscarLivroUseCase buscarLivroUseCase;
+    @MockBean
+    private ListarLivrosUseCase listarLivrosUseCase;
 
     @MockBean
-    BuscarLivroUseCase buscarLivroUseCase;
+    private AtualizarLivroUseCase atualizarLivroUseCase;
 
     @MockBean
-    ListarLivrosUseCase listarLivrosUseCase;
+    private DeletarLivroUseCase deletarLivroUseCase;
 
-    @MockBean
-    AtualizarLivroUseCase atualizarLivroUseCase;
+    record LivroTestData(
+            String titulo,
+            String editora,
+            Integer edicao,
+            String anoPublicacao,
+            List<Integer> autorCodAus,
+            List<Integer> assuntoCodAss
+    ) {
+        static LivroTestData padrao() {
+            return new LivroTestData(
+                    "O Senhor dos Anéis",
+                    "Allen & Unwin",
+                    1,
+                    "1954",
+                    List.of(1, 2),
+                    List.of(1, 2)
+            );
+        }
 
-    @MockBean
-    DeletarLivroUseCase deletarLivroUseCase;
+        LivroDTO toDto(Integer codigo) {
+            return LivroDTO.builder()
+                    .codigo(codigo)
+                    .titulo(titulo)
+                    .editora(editora)
+                    .edicao(edicao)
+                    .anoPublicacao(anoPublicacao)
+                    .autorCodAus(autorCodAus)
+                    .assuntoCodAss(assuntoCodAss)
+                    .build();
+        }
 
-    @BeforeEach
-    void setup() {
-    }
-
-    @Test
-    @DisplayName("Deve criar um novo livro com sucesso")
-    void testCriarLivro() throws Exception {
-        LivroDTO livroDTO = LivroDTO.builder()
-                .titulo("Livro de Teste")
-                .editora("Editora de Teste")
-                .edicao(1)
-                .anoPublicacao("2023")
-                .autorCodAus(Arrays.asList(1, 2))
-                .assuntoCodAss(Arrays.asList(3, 4))
-                .build();
-
-        when(criarLivroUseCase.execute(any(LivroDTO.class))).thenReturn(livroDTO);
-
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/livros")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(asJsonString(livroDTO)))
-                .andExpect(MockMvcResultMatchers.status().isCreated())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.titulo").value("Livro de Teste"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.editora").value("Editora de Teste"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.edicao").value(1))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.anoPublicacao").value("2023"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.autorCodAus").isArray())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.autorCodAus[0]").value(1))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.autorCodAus[1]").value(2))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.assuntoCodAss").isArray())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.assuntoCodAss[0]").value(3))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.assuntoCodAss[1]").value(4));
-    }
-
-    @Test
-    @DisplayName("Deve buscar um livro por ID com sucesso")
-    void testBuscarLivroPorId() throws Exception {
-        LivroDTO livroDTO = LivroDTO.builder()
-                .codigo(1)
-                .titulo("Livro de Teste")
-                .editora("Editora de Teste")
-                .edicao(1)
-                .anoPublicacao("2023")
-                .build();
-
-        when(buscarLivroUseCase.execute(anyInt())).thenReturn(livroDTO);
-
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/livros/1"))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.codigo").value(1))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.titulo").value("Livro de Teste"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.editora").value("Editora de Teste"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.edicao").value(1))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.anoPublicacao").value("2023"));
-    }
-
-    @Test
-    @DisplayName("Deve listar todos os livros com sucesso")
-    void testListarTodosOsLivros() throws Exception {
-        LivroDTO livroDTO1 = LivroDTO.builder()
-                .codigo(1)
-                .titulo("Livro de Teste 1")
-                .editora("Editora de Teste")
-                .edicao(1)
-                .anoPublicacao("2023")
-                .build();
-
-        LivroDTO livroDTO2 = LivroDTO.builder()
-                .codigo(2)
-                .titulo("Livro de Teste 2")
-                .editora("Editora de Teste")
-                .edicao(2)
-                .anoPublicacao("2024")
-                .build();
-
-        List<LivroDTO> livros = Arrays.asList(livroDTO1, livroDTO2);
-
-        when(listarLivrosUseCase.execute()).thenReturn(livros);
-
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/livros"))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$").isArray())
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].codigo").value(1))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].titulo").value("Livro de Teste 1"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].editora").value("Editora de Teste"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].edicao").value(1))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].anoPublicacao").value("2023"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[1].codigo").value(2))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[1].titulo").value("Livro de Teste 2"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[1].editora").value("Editora de Teste"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[1].edicao").value(2))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[1].anoPublicacao").value("2024"));
-    }
-
-    @Test
-    @DisplayName("Deve atualizar um livro com sucesso")
-    void testAtualizarLivro() throws Exception {
-        Integer id = 1;
-        LivroDTO livroDTO = LivroDTO.builder()
-                .codigo(id)
-                .titulo("Livro de Teste Atualizado")
-                .editora("Editora de Teste Atualizada")
-                .edicao(2)
-                .anoPublicacao("2025")
-                .autorCodAus(Arrays.asList(1, 2))
-                .assuntoCodAss(Arrays.asList(3, 4))
-                .build();
-
-        when(atualizarLivroUseCase.execute(anyInt(), any(LivroDTO.class))).thenReturn(livroDTO);
-
-        mockMvc.perform(MockMvcRequestBuilders.put("/api/v1/livros/{id}", id)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(asJsonString(livroDTO)))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.codigo").value(id))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.titulo").value("Livro de Teste Atualizado"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.editora").value("Editora de Teste Atualizada"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.edicao").value(2))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.anoPublicacao").value("2025"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.autorCodAus").isArray())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.autorCodAus[0]").value(1))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.autorCodAus[1]").value(2))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.assuntoCodAss").isArray())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.assuntoCodAss[0]").value(3))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.assuntoCodAss[1]").value(4));
-    }
-
-    @Test
-    @DisplayName("Deve deletar um livro com sucesso")
-    void testDeletarLivro() throws Exception {
-        Integer id = 1;
-        doNothing().when(deletarLivroUseCase).execute(anyInt());
-
-        mockMvc.perform(MockMvcRequestBuilders.delete("/api/v1/livros/{id}", id))
-                .andExpect(MockMvcResultMatchers.status().isNoContent());
-    }
-
-    @Test
-    @DisplayName("Deve lançar exceção ao deletar um livro")
-    void testDeletarLivroComErro() throws Exception {
-        Integer id = 1;
-        doThrow(new RuntimeException("Erro na deleção")).when(deletarLivroUseCase).execute(anyInt());
-
-        mockMvc.perform(MockMvcRequestBuilders.delete("/api/v1/livros/{id}", id))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("Deve lançar exceção ao criar um livro com dados inválidos")
-    void testCriarLivroComDadosInvalidos() throws Exception {
-        LivroDTO livroDTO = LivroDTO.builder()
-                .titulo(null)
-                .editora("Editora de Teste")
-                .edicao(1)
-                .anoPublicacao("2023")
-                .autorCodAus(Arrays.asList(1, 2))
-                .assuntoCodAss(Arrays.asList(3, 4))
-                .build();
-
-        when(criarLivroUseCase.execute(any(LivroDTO.class))).thenThrow(new BusinessException("Título é obrigatório"));
-
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/livros")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(asJsonString(livroDTO)))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("Erro de validação"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.errors[0]").value("titulo: Título é obrigatório"));
-    }
-
-    @Test
-    @DisplayName("Deve lançar exceção ao buscar um livro que não existe")
-    void testBuscarLivroInexistente() throws Exception {
-        when(buscarLivroUseCase.execute(anyInt())).thenThrow(new EntityNotFoundException("Livro com código 1 não encontrado"));
-
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/livros/1"))
-                .andExpect(MockMvcResultMatchers.status().isNotFound())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("Livro com código 1 não encontrado"));
-    }
-
-    private static String asJsonString(final Object obj) {
-        try {
-            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(obj);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        static List<LivroDTO> criarLista() {
+            return IntStream.range(0, 2)
+                    .mapToObj(i -> padrao().toDto(i + 1))
+                    .collect(Collectors.toList());
         }
     }
+
+    @Nested
+    @DisplayName("POST /livros - Testes de Criação")
+    class CriarLivroTest {
+
+        @Test
+        @DisplayName("Deve criar um livro técnico com sucesso")
+        void criarLivroTecnico() throws Exception {
+
+            var livro = LivroDTOTestFactory.umLivroBuilder()
+                    .codigo(null)
+                    .build();
+            var livroSalvo = LivroDTOTestFactory.umLivroBuilder().build();
+            when(criarLivroUseCase.execute(any())).thenReturn(livroSalvo);
+
+            performPost(livro)
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.message").value("Livro criado com sucesso"))
+                    .andExpect(jsonPath("$.data.codigo").value(1))
+                    .andExpect(jsonPath("$.data.titulo").value("Clean Code"))
+                    .andDo(print());
+        }
+
+        @Test
+        @DisplayName("Deve retornar erro ao criar livro com título em branco")
+        void criarLivroSemTitulo() throws Exception {
+            var livroInvalido = LivroDTOTestFactory.umLivroSemTitulo().build();
+            performPost(livroInvalido)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.type").value("https://api.spassu.com.br/errors/validation"));
+        }
+
+        @Test
+        @DisplayName("Deve criar vários livros de arquitetura")
+        void criarVariosLivros() throws Exception {
+            var livros = LivroDTOTestFactory.criarListaLivrosArquitetura();
+            for (var livro : livros) {
+                when(criarLivroUseCase.execute(any())).thenReturn(livro);
+                performPost(livro)
+                        .andExpect(status().isCreated())
+                        .andExpect(jsonPath("$.data.titulo").exists());
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /livros - Testes de Consulta")
+    class BuscarLivroTest {
+
+        @Test
+        @DisplayName("Deve listar todos os livros Java")
+        void listarLivrosJava() throws Exception {
+            var livros = LivroDTOTestFactory.criarListaLivrosJava();
+            when(listarLivrosUseCase.execute()).thenReturn(livros);
+
+            performGet("")
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data", hasSize(3)))
+                    .andExpect(jsonPath("$.data[*].titulo",
+                            hasItems("Effective Java", "Java Concurrency in Practice")))
+                    .andExpect(jsonPath("$.data[*].editora",
+                            hasItem("Manning")));
+        }
+
+        @Test
+        @DisplayName("Deve buscar livro por ID")
+        void buscarLivroPorId() throws Exception {
+            var id = 1;
+            var livro = LivroDTOTestFactory.umLivroBuilder().build();
+            when(buscarLivroUseCase.execute(id)).thenReturn(livro);
+
+            performGet("/{id}", id)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.codigo").value(id))
+                    .andExpect(jsonPath("$.data.editora").value("Prentice Hall"));
+        }
+
+        @Test
+        @DisplayName("Deve listar todos os livros")
+        void listarTodosLivros() throws Exception {
+            var livros = LivroTestData.criarLista();
+            when(listarLivrosUseCase.execute()).thenReturn(livros);
+
+            performGet("")
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.message").value("Lista de livros recuperada com sucesso"))
+                    .andExpect(jsonPath("$.data", hasSize(2)));
+
+            verify(listarLivrosUseCase).execute();
+        }
+
+        @Test
+        @DisplayName("Deve retornar 404 para livro não encontrado")
+        void buscarLivroInexistente() throws Exception {
+            when(buscarLivroUseCase.execute(999))
+                    .thenThrow(new EntityNotFoundException("Livro não encontrado"));
+
+            performGet("/{id}", 999)
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.type").value("https://api.spassu.com.br/errors/not-found"));
+        }
+    }
+
+    @Nested
+    @DisplayName("PUT /livros - Testes de Atualização")
+    class AtualizarLivroTest {
+
+        @Test
+        @DisplayName("Deve atualizar dados de um livro")
+        void atualizarLivro() throws Exception {
+            var id = 1;
+            var livroAtualizado = LivroDTOTestFactory.umLivroAtualizado();
+            when(atualizarLivroUseCase.execute(eq(id), any())).thenReturn(livroAtualizado);
+
+            performPut(livroAtualizado, id)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.message").value("Livro atualizado com sucesso"))
+                    .andExpect(jsonPath("$.data.titulo").value("Clean Code - Segunda Edição"))
+                    .andExpect(jsonPath("$.data.edicao").value(2));
+        }
+
+        @Test
+        @DisplayName("Deve falhar ao atualizar livro inexistente")
+        void atualizarLivroInexistente() throws Exception {
+            var id = 999;
+            var livro = LivroDTOTestFactory.umLivroBuilder().build();
+
+            when(atualizarLivroUseCase.execute(eq(id), any()))
+                    .thenThrow(new EntityNotFoundException("Livro não encontrado"));
+
+            performPut(livro, id)
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("DELETE /livros - Testes de Deleção")
+    class DeletarLivroTest {
+
+        @Test
+        @DisplayName("Deve deletar um livro com sucesso")
+        void deletarLivro() throws Exception {
+            var id = 1;
+            doNothing().when(deletarLivroUseCase).execute(id);
+
+            performDelete(id)
+                    .andExpect(status().isNoContent());
+
+            verify(deletarLivroUseCase).execute(id);
+        }
+
+        @Test
+        @DisplayName("Deve falhar ao tentar deletar livro inexistente")
+        void deletarLivroInexistente() throws Exception {
+            var id = 999;
+            doThrow(new EntityNotFoundException("Livro não encontrado"))
+                    .when(deletarLivroUseCase).execute(id);
+
+            performDelete(id)
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.type").value("https://api.spassu.com.br/errors/not-found"));
+        }
+    }
+
+    private ResultActions performPost(Object content) throws Exception {
+        return mockMvc.perform(post(BASE_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(content)))
+                .andDo(print());
+    }
+
+    private ResultActions performGet(String path, Object... urlVariables) throws Exception {
+        return mockMvc.perform(get(BASE_URL + path, urlVariables)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print());
+    }
+
+    private ResultActions performPut(Object content, Object... urlVariables) throws Exception {
+        return mockMvc.perform(put(BASE_URL + "/{id}", urlVariables)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(content)))
+                .andDo(print());
+    }
+
+    private ResultActions performDelete(Object... urlVariables) throws Exception {
+        return mockMvc.perform(delete(BASE_URL + "/{id}", urlVariables))
+                .andDo(print());
+    }
+
+    static class LivroDTOTestFactory {
+        static LivroDTO.LivroDTOBuilder umLivroBuilder() {
+            return LivroDTO.builder()
+                    .codigo(1)
+                    .titulo("Clean Code")
+                    .editora("Prentice Hall")
+                    .edicao(1)
+                    .anoPublicacao("2008")
+                    .autorCodAus(Arrays.asList(1, 2))
+                    .assuntoCodAss(Arrays.asList(1, 2));
+        }
+
+        static LivroDTO.LivroDTOBuilder umLivroComTituloBuilder(String titulo) {
+            return umLivroBuilder().titulo(titulo);
+        }
+
+        static LivroDTO.LivroDTOBuilder umLivroSemTitulo() {
+            return umLivroBuilder()
+                    .titulo(null)
+                    .editora("Prentice Hall")
+                    .edicao(1)
+                    .anoPublicacao("2023");
+        }
+
+        static LivroDTO.LivroDTOBuilder umLivroComCodigoBuilder(Integer codigo) {
+            return umLivroBuilder().codigo(codigo);
+        }
+
+        static LivroDTO umLivroCompleto() {
+            return umLivroBuilder().build();
+        }
+
+        static LivroDTO umLivroAtualizado() {
+            return umLivroBuilder()
+                    .titulo("Clean Code - Segunda Edição")
+                    .edicao(2)
+                    .anoPublicacao("2024")
+                    .build();
+        }
+
+        static List<LivroDTO> criarListaLivros(int quantidade) {
+            return IntStream.range(0, quantidade)
+                    .mapToObj(i -> umLivroBuilder()
+                            .codigo(i + 1)
+                            .titulo("Clean Code Volume " + (i + 1))
+                            .build())
+                    .collect(Collectors.toList());
+        }
+
+        static List<LivroDTO> criarListaLivrosTI() {
+            return Arrays.asList(
+                    umLivroBuilder()
+                            .codigo(1)
+                            .titulo("Clean Code")
+                            .build(),
+                    umLivroBuilder()
+                            .codigo(2)
+                            .titulo("Design Patterns")
+                            .editora("Addison-Wesley")
+                            .build(),
+                    umLivroBuilder()
+                            .codigo(3)
+                            .titulo("Refactoring")
+                            .editora("Addison-Wesley")
+                            .build()
+            );
+        }
+
+        static List<LivroDTO> criarListaLivrosJava() {
+            return Arrays.asList(
+                    umLivroBuilder()
+                            .codigo(1)
+                            .titulo("Effective Java")
+                            .editora("Addison-Wesley")
+                            .build(),
+                    umLivroBuilder()
+                            .codigo(2)
+                            .titulo("Java Concurrency in Practice")
+                            .editora("Addison-Wesley")
+                            .build(),
+                    umLivroBuilder()
+                            .codigo(3)
+                            .titulo("Modern Java in Action")
+                            .editora("Manning")
+                            .build()
+            );
+        }
+
+        static List<LivroDTO> criarListaLivrosArquitetura() {
+            return Arrays.asList(
+                    umLivroBuilder()
+                            .codigo(1)
+                            .titulo("Clean Architecture")
+                            .editora("Prentice Hall")
+                            .build(),
+                    umLivroBuilder()
+                            .codigo(2)
+                            .titulo("Domain-Driven Design")
+                            .editora("Addison-Wesley")
+                            .build(),
+                    umLivroBuilder()
+                            .codigo(3)
+                            .titulo("Building Microservices")
+                            .editora("O'Reilly")
+                            .build()
+            );
+        }
+    }
+
+
 }

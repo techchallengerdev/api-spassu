@@ -4,7 +4,6 @@ import com.br.spassu.api.domain.exceptions.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -18,40 +17,47 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(EntityNotFoundException.class)
-    public ResponseEntity<ErrorResponseInfra> handleEntityNotFoundException(EntityNotFoundException ex) {
-        ErrorResponseInfra error = new ErrorResponseInfra(
-                HttpStatus.NOT_FOUND.value(),
-                ex.getMessage(),
-                LocalDateTime.now()
-        );
+    public ResponseEntity<ApiError> handleEntityNotFoundException(EntityNotFoundException ex) {
+        ApiError error = ApiError.builder()
+                .status(HttpStatus.NOT_FOUND.value())
+                .type("https://api.spassu.com.br/errors/not-found")
+                .title("Recurso não encontrado")
+                .detail(ex.getMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponseInfra> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        List<String> errors = ex.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .collect(Collectors.toList());
-
-        ErrorResponseInfra error = new ErrorResponseInfra(
-                HttpStatus.BAD_REQUEST.value(),
+    public ResponseEntity<ApiError> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        ApiError apiError = ApiError.of(
+                HttpStatus.BAD_REQUEST,
+                "https://api.spassu.com.br/errors/validation",
                 "Erro de validação",
-                LocalDateTime.now(),
-                errors
+                "Campos inválidos na requisição"
         );
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+                apiError.addValidationError(error.getField(), error.getDefaultMessage())
+        );
+
+        return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponseInfra> handleAllUncaughtException(Exception ex) {
+    public ResponseEntity<ApiError> handleAllUncaughtException(Exception ex) {
         log.error("Erro não tratado", ex);
-        ErrorResponseInfra error = new ErrorResponseInfra(
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "Ocorreu um erro interno",
-                LocalDateTime.now()
-        );
+
+        ApiError error = ApiError.builder()
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .type("https://api.spassu.com.br/errors/internal")
+                .title("Erro interno do servidor")
+                .detail("Ocorreu um erro interno no servidor")
+                .timestamp(LocalDateTime.now())
+                .build();
+
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
+

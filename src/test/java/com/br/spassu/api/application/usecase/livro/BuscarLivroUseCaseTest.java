@@ -88,11 +88,11 @@ class BuscarLivroUseCaseTest {
         }
 
         @Test
-        @DisplayName("Deve lançar EntityNotFoundException quando livro não for encontrado")
-        void deveLancarEntityNotFoundExceptionQuandoLivroNaoEncontrado() {
+        @DisplayName("Deve lançar BusinessException quando livro não for encontrado")
+        void deveLancarBusinessExceptionQuandoLivroNaoEncontrado() {
             Mockito.when(livroRepository.findByCodigo(Mockito.any())).thenReturn(Optional.empty());
 
-            EntityNotFoundException exception = Assertions.assertThrows(EntityNotFoundException.class,
+            BusinessException exception = Assertions.assertThrows(BusinessException.class,
                     () -> useCase.execute(1));
             Assertions.assertEquals("Livro com código 1 não encontrado", exception.getMessage());
         }

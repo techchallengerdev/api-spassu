@@ -34,7 +34,7 @@ public class BuscarLivroUseCase {
 
     private Livro buscarLivro(Integer codigo) {
         return livroRepository.findByCodigo(codigo)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new BusinessException(
                         String.format("Livro com código %d não encontrado", codigo)));
     }
 }

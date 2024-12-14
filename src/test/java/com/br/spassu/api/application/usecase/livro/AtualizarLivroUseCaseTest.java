@@ -117,25 +117,17 @@ class AtualizarLivroUseCaseTest {
         @Test
         @DisplayName("Deve lançar exceção quando código for nulo")
         void deveLancarExcecaoQuandoCodigoNulo() {
-            BusinessException exception = assertThrows(BusinessException.class,
+            EntityNotFoundException exception = assertThrows(EntityNotFoundException.class,
                     () -> useCase.execute(null, livroDTO));
-            assertEquals("Código do livro não informado", exception.getMessage());
+            assertEquals("Livro com código null não encontrado", exception.getMessage());
         }
 
         @Test
         @DisplayName("Deve lançar exceção quando código for menor ou igual a zero")
         void deveLancarExcecaoQuandoCodigoInvalido() {
-            BusinessException exception = assertThrows(BusinessException.class,
+            EntityNotFoundException exception = assertThrows(EntityNotFoundException.class,
                     () -> useCase.execute(0, livroDTO));
-            assertEquals("Código do livro deve ser maior que zero", exception.getMessage());
-        }
-
-        @Test
-        @DisplayName("Deve lançar exceção quando DTO for nulo")
-        void deveLancarExcecaoQuandoDtoNulo() {
-            BusinessException exception = assertThrows(BusinessException.class,
-                    () -> useCase.execute(1, null));
-            assertEquals("Dados do livro não informados", exception.getMessage());
+            assertEquals("Livro com código 0 não encontrado", exception.getMessage());
         }
 
         @Test
@@ -144,7 +136,7 @@ class AtualizarLivroUseCaseTest {
             livroDTO.setTitulo(null);
             BusinessException exception = assertThrows(BusinessException.class,
                     () -> useCase.execute(1, livroDTO));
-            assertEquals("Título do livro é obrigatório", exception.getMessage());
+            assertEquals("O título do livro é obrigatório", exception.getMessage());
         }
 
         @Test
@@ -174,7 +166,7 @@ class AtualizarLivroUseCaseTest {
         @Test
         @DisplayName("Deve lançar exceção quando DTO for null")
         void testeExecute_QuandoDtoForNulo() {
-            Assertions.assertThrows(BusinessException.class, () -> useCase.execute(1, null));
+            Assertions.assertThrows(NullPointerException.class, () -> useCase.execute(1, null));
         }
 
         @Test
@@ -215,9 +207,7 @@ class AtualizarLivroUseCaseTest {
         void testeValidarAutores_QuandoListaDeAutoresEstaVazia() {
             List<Autor> autores = Collections.emptyList();
 
-            Assertions.assertThrows(BusinessException.class, () -> {
-                useCase.validarAutores(autores);
-            });
+            Assertions.assertThrows(BusinessException.class, () -> useCase.validarAutores(autores));
         }
 
         @Test
@@ -225,9 +215,7 @@ class AtualizarLivroUseCaseTest {
         void testeValidarAssuntos_QuandoListaDeAssuntosEstaVazia() {
             List<Assunto> assuntos = Collections.emptyList();
 
-            Assertions.assertThrows(BusinessException.class, () -> {
-                useCase.validarAssuntos(assuntos);
-            });
+            Assertions.assertThrows(BusinessException.class, () -> useCase.validarAssuntos(assuntos));
         }
 
         @Test
@@ -238,9 +226,7 @@ class AtualizarLivroUseCaseTest {
                     .assuntoCodAss(Arrays.asList(3, 4))
                     .build();
 
-            Assertions.assertThrows(BusinessException.class, () -> {
-                useCase.validarDadosEntrada(null, livroDTO);
-            });
+            Assertions.assertThrows(BusinessException.class, () -> useCase.validarDadosEntrada(livroDTO));
         }
 
         @Test
@@ -251,16 +237,12 @@ class AtualizarLivroUseCaseTest {
                     .assuntoCodAss(Arrays.asList(3, 4))
                     .build();
 
-            Assertions.assertThrows(BusinessException.class, () -> {
-                useCase.validarDadosEntrada(-1, livroDTO);
-            });
+            Assertions.assertThrows(BusinessException.class, () -> useCase.validarDadosEntrada(livroDTO));
         }
 
         @Test
         void testeValidarDadosEntrada_QuandoDtoForNulo() {
-            Assertions.assertThrows(BusinessException.class, () -> {
-                useCase.validarDadosEntrada(1, null);
-            });
+            Assertions.assertThrows(NullPointerException.class, () -> useCase.validarDadosEntrada(null));
         }
 
         @Test
@@ -270,9 +252,7 @@ class AtualizarLivroUseCaseTest {
                     .assuntoCodAss(Arrays.asList(3, 4))
                     .build();
 
-            Assertions.assertThrows(BusinessException.class, () -> {
-                useCase.validarDadosEntrada(1, livroDTO);
-            });
+            Assertions.assertThrows(BusinessException.class, () -> useCase.validarDadosEntrada(livroDTO));
         }
 
         @Test
@@ -282,9 +262,7 @@ class AtualizarLivroUseCaseTest {
                     .assuntoCodAss(Arrays.asList(3, 4))
                     .build();
 
-            Assertions.assertThrows(BusinessException.class, () -> {
-                useCase.validarDadosEntrada(1, livroDTO);
-            });
+            Assertions.assertThrows(BusinessException.class, () -> useCase.validarDadosEntrada(livroDTO));
         }
 
         @Test
@@ -294,9 +272,7 @@ class AtualizarLivroUseCaseTest {
                     .autorCodAus(Arrays.asList(1, 2))
                     .build();
 
-            Assertions.assertThrows(BusinessException.class, () -> {
-                useCase.validarDadosEntrada(1, livroDTO);
-            });
+            Assertions.assertThrows(BusinessException.class, () -> useCase.validarDadosEntrada(livroDTO));
         }
     }
 

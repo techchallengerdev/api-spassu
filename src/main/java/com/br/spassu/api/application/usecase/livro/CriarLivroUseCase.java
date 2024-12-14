@@ -25,49 +25,39 @@ public class CriarLivroUseCase {
     private final LivroMapper livroMapper;
 
     @Transactional
-    public LivroDTO execute(LivroDTO dto) {
-        validarDadosEntrada(dto);
+    public LivroDTO execute(LivroDTO livroDTO) {
+        if (livroDTO == null) {
+            throw new BusinessException("Dados do livro não informados");
+        }
 
-        List<Autor> autores = buscarAutores(dto.getAutorCodAus());
-        validarAutores(autores);
+        List<Autor> autores = buscarAutores(livroDTO.getAutorCodAus());
+        List<Assunto> assuntos = buscarAssuntos(livroDTO.getAssuntoCodAss());
 
-        List<Assunto> assuntos = buscarAssuntos(dto.getAssuntoCodAss());
-        validarAssuntos(assuntos);
-
-        Livro livro = criarLivro(dto, autores, assuntos);
+        Livro livro = criarLivroComRelacionamentos(livroDTO, autores, assuntos);
+        livro.validar();
 
         Livro livroSalvo = livroRepository.save(livro);
         return livroMapper.toDto(livroSalvo);
     }
 
-    private Livro criarLivro(LivroDTO dto, List<Autor> autores, List<Assunto> assuntos) {
-        return Livro.builder()
+    private Livro criarLivroComRelacionamentos(LivroDTO dto, List<Autor> autores, List<Assunto> assuntos) {
+        Livro livro = Livro.builder()
                 .titulo(dto.getTitulo())
                 .editora(dto.getEditora())
                 .edicao(dto.getEdicao())
                 .anoPublicacao(dto.getAnoPublicacao())
-                .autores(autores)
-                .assuntos(assuntos)
                 .build();
-    }
 
-    void validarDadosEntrada(LivroDTO dto) {
-        if (dto == null) {
-            throw new BusinessException("Dados do livro não informados");
-        }
-        if (dto.getTitulo() == null || dto.getTitulo().trim().isEmpty()) {
-            throw new BusinessException("Título é obrigatório");
-        }
-        if (dto.getAutorCodAus() == null || dto.getAutorCodAus().isEmpty()) {
-            throw new BusinessException("É necessário informar pelo menos um autor");
-        }
-        if (dto.getAssuntoCodAss() == null || dto.getAssuntoCodAss().isEmpty()) {
-            throw new BusinessException("É necessário informar pelo menos um assunto");
-        }
+        autores.forEach(livro::adicionarAutor);
+        assuntos.forEach(livro::adicionarAssunto);
+
+        return livro;
     }
 
     private List<Autor> buscarAutores(List<Integer> autorCodAus) {
-        if (autorCodAus == null) return List.of();
+        if (autorCodAus == null || autorCodAus.isEmpty()) {
+            throw new BusinessException("É necessário informar pelo menos um autor");
+        }
 
         return autorCodAus.stream()
                 .map(codigoAutor -> autorRepository.findByCodigo(codigoAutor)
@@ -76,25 +66,15 @@ public class CriarLivroUseCase {
                 .collect(Collectors.toList());
     }
 
-    void validarAutores(List<Autor> autores) {
-        if (autores.isEmpty()) {
-            throw new BusinessException("É necessário informar pelo menos um autor válido");
-        }
-    }
-
     private List<Assunto> buscarAssuntos(List<Integer> assuntoCodAss) {
-        if (assuntoCodAss == null) return List.of();
+        if (assuntoCodAss == null || assuntoCodAss.isEmpty()) {
+            throw new BusinessException("É necessário informar pelo menos um assunto");
+        }
 
         return assuntoCodAss.stream()
                 .map(codigoAssunto -> assuntoRepository.findByCodigo(codigoAssunto)
                         .orElseThrow(() -> new BusinessException(
                                 String.format("Assunto com código %d não encontrado", codigoAssunto))))
                 .collect(Collectors.toList());
-    }
-
-    void validarAssuntos(List<Assunto> assuntos) {
-        if (assuntos.isEmpty()) {
-            throw new BusinessException("É necessário informar pelo menos um assunto válido");
-        }
     }
 }
