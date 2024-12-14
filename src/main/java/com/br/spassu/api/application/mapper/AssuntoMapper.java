@@ -4,8 +4,6 @@ import com.br.spassu.api.application.dto.AssuntoDTO;
 import com.br.spassu.api.domain.entity.Assunto;
 import com.br.spassu.api.domain.entity.Livro;
 import com.br.spassu.api.infrastructure.persistence.entity.AssuntoEntity;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;

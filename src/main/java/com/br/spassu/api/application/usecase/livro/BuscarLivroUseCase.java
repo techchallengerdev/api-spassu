@@ -4,7 +4,6 @@ import com.br.spassu.api.application.dto.LivroDTO;
 import com.br.spassu.api.application.mapper.LivroMapper;
 import com.br.spassu.api.domain.entity.Livro;
 import com.br.spassu.api.domain.exceptions.BusinessException;
-import com.br.spassu.api.domain.exceptions.EntityNotFoundException;
 import com.br.spassu.api.domain.repository.LivroRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

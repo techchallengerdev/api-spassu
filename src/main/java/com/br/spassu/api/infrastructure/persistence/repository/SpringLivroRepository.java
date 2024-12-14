@@ -1,6 +1,5 @@
 package com.br.spassu.api.infrastructure.persistence.repository;
 
-import com.br.spassu.api.infrastructure.persistence.entity.AutorEntity;
 import com.br.spassu.api.infrastructure.persistence.entity.LivroEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
