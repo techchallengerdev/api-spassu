@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <report>
+        <html>
+            <sourceFilePages>
+                <sourceFilePage>
+                    <counters>
+                        <counter>LINE</counter>
+                        <counter>BRANCH</counter>
+                        <counter>METHOD</counter>
+                    </counters>
+                </sourceFilePage>
+            </sourceFilePages>
+        </html>
+    </report>
+</configuration>

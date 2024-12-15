@@ -3,6 +3,8 @@ package com.br.spassu.api.infrastructure.controller;
 import com.br.spassu.api.application.dto.LivroDTO;
 import com.br.spassu.api.application.usecase.livro.*;
 import com.br.spassu.api.domain.exceptions.EntityNotFoundException;
+import com.br.spassu.api.domain.exceptions.InvalidBookDataException;
+import com.br.spassu.api.infrastructure.response.ResponseWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -98,18 +100,26 @@ class LivroControllerTest {
         @Test
         @DisplayName("Deve criar um livro técnico com sucesso")
         void criarLivroTecnico() throws Exception {
-
-            var livro = LivroDTOTestFactory.umLivroBuilder()
+            var livroRequest = LivroDTOTestFactory.umLivroBuilder()
                     .codigo(null)
                     .build();
-            var livroSalvo = LivroDTOTestFactory.umLivroBuilder().build();
-            when(criarLivroUseCase.execute(any())).thenReturn(livroSalvo);
 
-            performPost(livro)
+            var livroResponse = LivroDTOTestFactory.umLivroBuilder().build();
+
+            var responseWrapper = ResponseWrapper.<LivroDTO>builder()
+                    .message("Livro criado com sucesso")
+                    .data(livroResponse)
+                    .build();
+
+            when(criarLivroUseCase.execute(any(LivroDTO.class))).thenReturn(responseWrapper);
+
+            performPost(livroRequest)
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.message").value("Livro criado com sucesso"))
                     .andExpect(jsonPath("$.data.codigo").value(1))
                     .andExpect(jsonPath("$.data.titulo").value("Clean Code"))
+                    .andExpect(jsonPath("$.data.editora").value("Alta Books"))
+                    .andExpect(jsonPath("$.data.autores[0].nome").value("Robert C. Martin"))
                     .andDo(print());
         }
 
@@ -117,22 +127,40 @@ class LivroControllerTest {
         @DisplayName("Deve retornar erro ao criar livro com título em branco")
         void criarLivroSemTitulo() throws Exception {
             var livroInvalido = LivroDTOTestFactory.umLivroSemTitulo().build();
+
+            when(criarLivroUseCase.execute(any(LivroDTO.class)))
+                    .thenThrow(new InvalidBookDataException("Título não informado, campo obrigatório"));
+
             performPost(livroInvalido)
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").value("https://api.spassu.com.br/errors/validation"));
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.type").value("https://api.spassu.com.br/errors/business"))
+                    .andExpect(jsonPath("$.title").value("Erro de Regra de Negócio"))
+                    .andExpect(jsonPath("$.detail").value("Título não informado, campo obrigatório"))
+                    .andDo(print());
         }
 
         @Test
         @DisplayName("Deve criar vários livros de arquitetura")
         void criarVariosLivros() throws Exception {
             var livros = LivroDTOTestFactory.criarListaLivrosArquitetura();
-            for (var livro : livros) {
-                when(criarLivroUseCase.execute(any())).thenReturn(livro);
-                performPost(livro)
+
+            for (var livroRequest : livros) {
+                var responseWrapper = ResponseWrapper.<LivroDTO>builder()
+                        .message("Livro criado com sucesso")
+                        .data(livroRequest)
+                        .build();
+
+                when(criarLivroUseCase.execute(any(LivroDTO.class))).thenReturn(responseWrapper);
+
+                performPost(livroRequest)
                         .andExpect(status().isCreated())
-                        .andExpect(jsonPath("$.data.titulo").exists());
+                        .andExpect(jsonPath("$.message").value("Livro criado com sucesso"))
+                        .andExpect(jsonPath("$.data.titulo").exists())
+                        .andExpect(jsonPath("$.data.editora").exists())
+                        .andDo(print());
             }
         }
+
     }
 
     @Nested
@@ -198,17 +226,45 @@ class LivroControllerTest {
     class AtualizarLivroTest {
 
         @Test
-        @DisplayName("Deve atualizar dados de um livro")
-        void atualizarLivro() throws Exception {
-            var id = 1;
-            var livroAtualizado = LivroDTOTestFactory.umLivroAtualizado();
-            when(atualizarLivroUseCase.execute(eq(id), any())).thenReturn(livroAtualizado);
+        @DisplayName("Deve atualizar um livro técnico com sucesso")
+        void atualizarLivroTecnico() throws Exception {
+            var livroRequest = LivroDTOTestFactory.umLivroBuilder()
+                    .codigo(null)
+                    .build();
 
-            performPut(livroAtualizado, id)
+            var livroResponse = LivroDTOTestFactory.umLivroBuilder().build();
+
+            var responseWrapper = ResponseWrapper.<LivroDTO>builder()
+                    .message("Livro atualizado com sucesso")
+                    .data(livroResponse)
+                    .build();
+
+            when(atualizarLivroUseCase.execute(eq(1), any(LivroDTO.class)))
+                    .thenReturn(responseWrapper);
+
+            mockMvc.perform(put("/api/livros/{id}", 1)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(livroRequest)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.message").value("Livro atualizado com sucesso"))
-                    .andExpect(jsonPath("$.data.titulo").value("Clean Code - Segunda Edição"))
-                    .andExpect(jsonPath("$.data.edicao").value(2));
+                    .andExpect(jsonPath("$.data.codigo").value(1))
+                    .andExpect(jsonPath("$.data.titulo").value("Clean Code"))
+                    .andExpect(jsonPath("$.data.editora").value("Alta Books"))
+                    .andDo(print());
+        }
+
+        @Test
+        @DisplayName("Deve retornar erro ao atualizar livro com título em branco")
+        void atualizarLivroSemTitulo() throws Exception {
+            var livroInvalido = LivroDTOTestFactory.umLivroSemTitulo().build();
+
+            mockMvc.perform(put("/api/livros/{id}", 1)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(livroInvalido)))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.type").value("https://api.spassu.com.br/errors/business"))
+                    .andExpect(jsonPath("$.detail").value("Título não informado, campo obrigatório"))
+                    .andDo(print());
         }
 
         @Test
@@ -222,6 +278,30 @@ class LivroControllerTest {
 
             performPut(livro, id)
                     .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("Deve atualizar vários livros de arquitetura")
+        void atualizarVariosLivros() throws Exception {
+            var livros = LivroDTOTestFactory.criarListaLivrosArquitetura();
+
+            for (var livroRequest : livros) {
+                var responseWrapper = ResponseWrapper.<LivroDTO>builder()
+                        .message("Livro atualizado com sucesso")
+                        .data(livroRequest)
+                        .build();
+
+                when(atualizarLivroUseCase.execute(eq(livroRequest.getCodigo()), any(LivroDTO.class)))
+                        .thenReturn(responseWrapper);
+
+                mockMvc.perform(put("/api/livros/{id}", livroRequest.getCodigo())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(livroRequest)))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.message").value("Livro atualizado com sucesso"))
+                        .andExpect(jsonPath("$.data.titulo").value(livroRequest.getTitulo()))
+                        .andDo(print());
+            }
         }
     }
 

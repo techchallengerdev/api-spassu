@@ -149,4 +149,21 @@ public class Livro {
         this.assuntos.remove(assunto);
         assunto.getLivros().remove(this);
     }
+
+    public void limparAutores() {
+        autores.forEach(autor -> autor.getLivros().remove(this));
+        autores.clear();
+    }
+
+    public void limparAssuntos() {
+        assuntos.forEach(assunto -> assunto.getLivros().remove(this));
+        assuntos.clear();
+    }
+
+    private boolean isValid() {
+        return titulo != null && !titulo.trim().isEmpty() &&
+                editora != null && !editora.trim().isEmpty() &&
+                !autores.isEmpty() &&
+                !assuntos.isEmpty();
+    }
 }

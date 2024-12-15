@@ -5,131 +5,106 @@ import com.br.spassu.api.application.mapper.LivroMapper;
 import com.br.spassu.api.domain.entity.Assunto;
 import com.br.spassu.api.domain.entity.Autor;
 import com.br.spassu.api.domain.entity.Livro;
-import com.br.spassu.api.domain.exceptions.BusinessException;
-import com.br.spassu.api.domain.exceptions.EntityNotFoundException;
+import com.br.spassu.api.domain.exceptions.AuthorNotFoundException;
+import com.br.spassu.api.domain.exceptions.BookNotFoundException;
+import com.br.spassu.api.domain.exceptions.InvalidBookDataException;
+import com.br.spassu.api.domain.exceptions.SubjectNotFoundException;
 import com.br.spassu.api.domain.repository.AssuntoRepository;
 import com.br.spassu.api.domain.repository.AutorRepository;
 import com.br.spassu.api.domain.repository.LivroRepository;
+import com.br.spassu.api.infrastructure.response.ResponseWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AtualizarLivroUseCase {
+
     private final LivroRepository livroRepository;
     private final AutorRepository autorRepository;
     private final AssuntoRepository assuntoRepository;
     private final LivroMapper livroMapper;
 
+    private static final String SUCESSO_ATUALIZAR_LIVRO = "Livro atualizado com sucesso";
+
     @Transactional
-    public LivroDTO execute(Integer codigo, LivroDTO dto) {
-        validarDadosEntrada(dto);
+    public ResponseWrapper<LivroDTO> execute(Integer codigo, LivroDTO livroDTO) {
+        validarDadosLivro(livroDTO);
+        validarCamposObrigatorios(livroDTO);
 
-        Livro livroExistente = buscarLivro(codigo);
+        Livro livroExistente = buscarLivroExistente(codigo);
+        List<Autor> autores = buscarAutores(livroDTO.getAutorCodAus());
+        List<Assunto> assuntos = buscarAssuntos(livroDTO.getAssuntoCodAss());
 
-        List<Autor> autores = buscarAutores(dto.getAutorCodAus());
-        validarAutores(autores);
+        atualizarLivro(livroExistente, livroDTO, autores, assuntos);
+        livroExistente.validar();
 
-        List<Assunto> assuntos = buscarAssuntos(dto.getAssuntoCodAss());
-        validarAssuntos(assuntos);
+        Livro livroSalvo = livroRepository.save(livroExistente);
 
-        atualizarLivro(livroExistente, dto, autores, assuntos);
-
-        Livro livroAtualizado = livroRepository.save(livroExistente);
-        return livroMapper.toDto(livroAtualizado);
+        return ResponseWrapper.<LivroDTO>builder()
+                .message(SUCESSO_ATUALIZAR_LIVRO)
+                .data(livroMapper.toDto(livroSalvo))
+                .build();
     }
 
-    void validarDadosEntrada(LivroDTO livroDTO) {
-        List<String> erros = new ArrayList<>();
-
-        if (livroDTO.getCodigo() == null || livroDTO.getCodigo() <= 0) {
-            erros.add("O código do livro deve ser maior que zero");
-        }
-
-        if (livroDTO.getTitulo() == null || livroDTO.getTitulo().isEmpty()) {
-            erros.add("O título do livro é obrigatório");
-        }
-
-        if (livroDTO.getEditora() == null || livroDTO.getEditora().isEmpty()) {
-            erros.add("A editora do livro é obrigatória");
-        }
-
-        if (livroDTO.getEdicao() == null || livroDTO.getEdicao() < 0) {
-            erros.add("A edição do livro deve ser maior ou igual a zero");
-        }
-
-        if (livroDTO.getAnoPublicacao() == null || livroDTO.getAnoPublicacao().isEmpty()) {
-            erros.add("O ano de publicação do livro é obrigatório");
-        } else {
-            try {
-                Integer.parseInt(livroDTO.getAnoPublicacao());
-            } catch (NumberFormatException e) {
-                erros.add("O ano de publicação do livro deve ser um número válido");
-            }
-        }
-
-        if (livroDTO.getAutorCodAus() == null || livroDTO.getAutorCodAus().isEmpty()) {
-            erros.add("O livro deve ter pelo menos um autor");
-        }
-
-        if (livroDTO.getAssuntoCodAss() == null || livroDTO.getAssuntoCodAss().isEmpty()) {
-            erros.add("O livro deve ter pelo menos um assunto");
-        }
-
-        if (!erros.isEmpty()) {
-            throw new BusinessException(String.join(", ", erros));
-        }
-    }
-
-    private Livro buscarLivro(Integer codigo) {
+    private Livro buscarLivroExistente(Integer codigo) {
         return livroRepository.findByCodigo(codigo)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        String.format("Livro com código %d não encontrado", codigo)));
+                .orElseThrow(() -> new BookNotFoundException(codigo));
     }
 
-    private List<Autor> buscarAutores(List<Integer> autorCodAus) {
-        if (autorCodAus == null) return List.of();
-
-        return autorCodAus.stream()
-                .map(codigoAutor -> autorRepository.findByCodigo(codigoAutor)
-                        .orElseThrow(() -> new BusinessException(
-                                String.format("Autor com código %d não encontrado", codigoAutor))))
-                .collect(Collectors.toList());
-    }
-
-    void validarAutores(List<Autor> autores) {
-        if (autores.isEmpty()) {
-            throw new BusinessException("É necessário informar pelo menos um autor válido");
+    private void validarDadosLivro(LivroDTO livroDTO) {
+        if (livroDTO == null) {
+            throw new InvalidBookDataException("Dados do livro não informados");
         }
     }
 
-    private List<Assunto> buscarAssuntos(List<Integer> assuntoCodAss) {
-        if (assuntoCodAss == null) return List.of();
+    private void validarCamposObrigatorios(LivroDTO livroDTO) {
+        if (!StringUtils.hasText(livroDTO.getTitulo())) {
+            throw new InvalidBookDataException("Título não informado, campo obrigatório");
+        }
 
-        return assuntoCodAss.stream()
-                .map(codigoAssunto -> assuntoRepository.findByCodigo(codigoAssunto)
-                        .orElseThrow(() -> new BusinessException(
-                                String.format("Assunto com código %d não encontrado", codigoAssunto))))
-                .collect(Collectors.toList());
-    }
-
-    void validarAssuntos(List<Assunto> assuntos) {
-        if (assuntos.isEmpty()) {
-            throw new BusinessException("É necessário informar pelo menos um assunto válido");
+        if (!StringUtils.hasText(livroDTO.getEditora())) {
+            throw new InvalidBookDataException("Editora não informada, campo obrigatório");
         }
     }
 
     private void atualizarLivro(Livro livro, LivroDTO dto, List<Autor> autores, List<Assunto> assuntos) {
-        livro.setTitulo(dto.getTitulo());
-        livro.setEditora(dto.getEditora());
+        livro.setTitulo(dto.getTitulo().trim());
+        livro.setEditora(dto.getEditora().trim());
         livro.setEdicao(dto.getEdicao());
         livro.setAnoPublicacao(dto.getAnoPublicacao());
-        livro.setAutores(autores);
-        livro.setAssuntos(assuntos);
+
+        livro.limparAutores();
+        livro.limparAssuntos();
+
+        autores.forEach(livro::adicionarAutor);
+        assuntos.forEach(livro::adicionarAssunto);
+    }
+
+    private List<Autor> buscarAutores(List<Integer> autorCodAus) {
+        if (autorCodAus == null || autorCodAus.isEmpty()) {
+            throw new InvalidBookDataException("Lista de autores não informada, campo obrigatório");
+        }
+
+        return autorCodAus.stream()
+                .map(codigoAutor -> autorRepository.findByCodigo(codigoAutor)
+                        .orElseThrow(() -> new AuthorNotFoundException(codigoAutor)))
+                .collect(Collectors.toList());
+    }
+
+    private List<Assunto> buscarAssuntos(List<Integer> assuntoCodAss) {
+        if (assuntoCodAss == null || assuntoCodAss.isEmpty()) {
+            throw new InvalidBookDataException("Lista de assuntos não informada, campo obrigatório");
+        }
+
+        return assuntoCodAss.stream()
+                .map(codigoAssunto -> assuntoRepository.findByCodigo(codigoAssunto)
+                        .orElseThrow(() -> new SubjectNotFoundException(codigoAssunto)))
+                .collect(Collectors.toList());
     }
 }

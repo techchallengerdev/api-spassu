@@ -5,39 +5,42 @@ import com.br.spassu.api.application.mapper.LivroMapper;
 import com.br.spassu.api.domain.entity.Assunto;
 import com.br.spassu.api.domain.entity.Autor;
 import com.br.spassu.api.domain.entity.Livro;
+import com.br.spassu.api.domain.exceptions.AuthorNotFoundException;
+import com.br.spassu.api.domain.exceptions.BookNotFoundException;
 import com.br.spassu.api.domain.exceptions.BusinessException;
-import com.br.spassu.api.domain.exceptions.EntityNotFoundException;
+import com.br.spassu.api.domain.exceptions.SubjectNotFoundException;
 import com.br.spassu.api.domain.repository.AssuntoRepository;
 import com.br.spassu.api.domain.repository.AutorRepository;
 import com.br.spassu.api.domain.repository.LivroRepository;
-import org.junit.jupiter.api.*;
+import com.br.spassu.api.infrastructure.response.ResponseWrapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class AtualizarLivroUseCaseTest {
 
+    private static final Integer LIVRO_ID = 1;
+    private static final String MENSAGEM_SUCESSO = "Livro atualizado com sucesso";
+
     @Mock
     private LivroRepository livroRepository;
-
     @Mock
     private AutorRepository autorRepository;
-
     @Mock
     private AssuntoRepository assuntoRepository;
-
     @Mock
     private LivroMapper livroMapper;
 
@@ -51,267 +54,141 @@ class AtualizarLivroUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        // Configuração dos objetos de teste
-        livroDTO = LivroDTO.builder()
-                .codigo(1)
-                .titulo("Clean Code")
-                .editora("Alta Books")
-                .edicao(1)
-                .anoPublicacao("2008")
-                .autorCodAus(List.of(1))
-                .assuntoCodAss(List.of(1))
-                .build();
-
         autor = Autor.builder()
                 .codigo(1)
                 .nome("Robert C. Martin")
-                .livros(List.of())
                 .build();
 
         assunto = Assunto.builder()
                 .codigo(1)
-                .descricao("Programação")
-                .livros(List.of())
+                .descricao("Clean Code")
+                .build();
+
+        livroDTO = LivroDTO.builder()
+                .codigo(LIVRO_ID)
+                .titulo("Clean Architecture")
+                .editora("Alta Books")
+                .edicao(1)
+                .anoPublicacao("2020")
+                .autorCodAus(List.of(1))
+                .assuntoCodAss(List.of(1))
                 .build();
 
         livro = Livro.builder()
-                .codigo(1)
-                .titulo("Clean Code")
+                .codigo(LIVRO_ID)
+                .titulo("Clean Architecture")
                 .editora("Alta Books")
                 .edicao(1)
-                .anoPublicacao("2008")
-                .autores(List.of(autor))
-                .assuntos(List.of(assunto))
+                .anoPublicacao("2020")
                 .build();
     }
 
-    @Nested
-    @DisplayName("Testes de sucesso")
-    class SucessoTests {
+    @Test
+    @DisplayName("Deve atualizar livro com sucesso")
+    void deveAtualizarLivroComSucesso() {
+        when(livroRepository.findByCodigo(LIVRO_ID)).thenReturn(Optional.of(livro));
+        when(autorRepository.findByCodigo(1)).thenReturn(Optional.of(autor));
+        when(assuntoRepository.findByCodigo(1)).thenReturn(Optional.of(assunto));
+        when(livroRepository.save(any(Livro.class))).thenReturn(livro);
+        when(livroMapper.toDto(any(Livro.class))).thenReturn(livroDTO);
 
-        @Test
-        @DisplayName("Deve atualizar um livro com sucesso")
-        void deveAtualizarLivroComSucesso() {
-            // Arrange
-            when(livroRepository.findByCodigo(1)).thenReturn(Optional.of(livro));
-            when(autorRepository.findByCodigo(1)).thenReturn(Optional.of(autor));
-            when(assuntoRepository.findByCodigo(1)).thenReturn(Optional.of(assunto));
-            when(livroRepository.save(any(Livro.class))).thenReturn(livro);
-            when(livroMapper.toDto(any(Livro.class))).thenReturn(livroDTO);
+        ResponseWrapper<LivroDTO> resultado = useCase.execute(LIVRO_ID, livroDTO);
 
-            // Act
-            LivroDTO resultado = useCase.execute(1, livroDTO);
-
-            // Assert
-            assertNotNull(resultado);
-            assertEquals(livroDTO.getCodigo(), resultado.getCodigo());
-            assertEquals(livroDTO.getTitulo(), resultado.getTitulo());
-            verify(livroRepository).save(any(Livro.class));
-        }
+        assertThat(resultado).isNotNull();
+        assertThat(resultado.getMessage()).isEqualTo(MENSAGEM_SUCESSO);
+        assertThat(resultado.getData()).isNotNull();
+        assertThat(resultado.getData().getTitulo()).isEqualTo(livroDTO.getTitulo());
+        verify(livroRepository).save(any(Livro.class));
     }
 
-    @Nested
-    @DisplayName("Testes de validação")
-    class ValidacaoTests {
+    @Test
+    @DisplayName("Deve lançar exceção quando livro não for encontrado")
+    void deveLancarExcecaoQuandoLivroNaoEncontrado() {
+        when(livroRepository.findByCodigo(LIVRO_ID)).thenReturn(Optional.empty());
 
-        @Test
-        @DisplayName("Deve lançar exceção quando código for nulo")
-        void deveLancarExcecaoQuandoCodigoNulo() {
-            EntityNotFoundException exception = assertThrows(EntityNotFoundException.class,
-                    () -> useCase.execute(null, livroDTO));
-            assertEquals("Livro com código null não encontrado", exception.getMessage());
-        }
+        assertThatThrownBy(() -> useCase.execute(LIVRO_ID, livroDTO))
+                .isInstanceOf(BookNotFoundException.class)
+                .hasMessage("Livro com código " + LIVRO_ID + " não encontrado");
 
-        @Test
-        @DisplayName("Deve lançar exceção quando código for menor ou igual a zero")
-        void deveLancarExcecaoQuandoCodigoInvalido() {
-            EntityNotFoundException exception = assertThrows(EntityNotFoundException.class,
-                    () -> useCase.execute(0, livroDTO));
-            assertEquals("Livro com código 0 não encontrado", exception.getMessage());
-        }
-
-        @Test
-        @DisplayName("Deve lançar exceção quando título for nulo")
-        void deveLancarExcecaoQuandoTituloNulo() {
-            livroDTO.setTitulo(null);
-            BusinessException exception = assertThrows(BusinessException.class,
-                    () -> useCase.execute(1, livroDTO));
-            assertEquals("O título do livro é obrigatório", exception.getMessage());
-        }
-
-        @Test
-        @DisplayName("Deve lançar exceção quando código for nulo")
-        void testeExecute_QuandoCodigoForNulo() {
-            LivroDTO livroDTO = LivroDTO.builder()
-                    .titulo("Livro de Teste")
-                    .autorCodAus(Arrays.asList(1, 2))
-                    .assuntoCodAss(Arrays.asList(3, 4))
-                    .build();
-
-            Assertions.assertThrows(BusinessException.class, () -> useCase.execute(null, livroDTO));
-        }
-
-        @Test
-        @DisplayName("Deve lançar exceção quando código for negativo")
-        void testeExecute_QuandoCodigoForNegativo() {
-            LivroDTO livroDTO = LivroDTO.builder()
-                    .titulo("Livro de Teste")
-                    .autorCodAus(Arrays.asList(1, 2))
-                    .assuntoCodAss(Arrays.asList(3, 4))
-                    .build();
-
-            Assertions.assertThrows(BusinessException.class, () -> useCase.execute(-1, livroDTO));
-        }
-
-        @Test
-        @DisplayName("Deve lançar exceção quando DTO for null")
-        void testeExecute_QuandoDtoForNulo() {
-            Assertions.assertThrows(NullPointerException.class, () -> useCase.execute(1, null));
-        }
-
-        @Test
-        @DisplayName("Deve lançar exceção quando título for null ou vazio")
-        void testeExecute_QuandoTituloForNuloOuVazio() {
-            LivroDTO livroDTO = LivroDTO.builder()
-                    .autorCodAus(Arrays.asList(1, 2))
-                    .assuntoCodAss(Arrays.asList(3, 4))
-                    .build();
-
-            Assertions.assertThrows(BusinessException.class, () -> useCase.execute(1, livroDTO));
-        }
-
-        @Test
-        @DisplayName("Deve lançar exceção quando a lista de autores for null ou vazia")
-        void testeExecute_QuandoListaDeAutoresForNulaOuVazia() {
-            LivroDTO livroDTO = LivroDTO.builder()
-                    .titulo("Livro de Teste")
-                    .assuntoCodAss(Arrays.asList(3, 4))
-                    .build();
-
-            Assertions.assertThrows(BusinessException.class, () -> useCase.execute(1, livroDTO));
-        }
-
-        @Test
-        @DisplayName("Deve lançar exceção quando a lista de assuntos for null ou vazia")
-        void testeExecute_QuandoListaDeAssuntosForNulaOuVazia() {
-            LivroDTO livroDTO = LivroDTO.builder()
-                    .titulo("Livro de Teste")
-                    .autorCodAus(Arrays.asList(1, 2))
-                    .build();
-
-            Assertions.assertThrows(BusinessException.class, () -> useCase.execute(1, livroDTO));
-        }
-
-        @Test
-        @DisplayName("Deve lançar exceção quando a lista de autores estiver vazia")
-        void testeValidarAutores_QuandoListaDeAutoresEstaVazia() {
-            List<Autor> autores = Collections.emptyList();
-
-            Assertions.assertThrows(BusinessException.class, () -> useCase.validarAutores(autores));
-        }
-
-        @Test
-        @DisplayName("Deve lançar exceção quando a lista de assuntos estiver vazia")
-        void testeValidarAssuntos_QuandoListaDeAssuntosEstaVazia() {
-            List<Assunto> assuntos = Collections.emptyList();
-
-            Assertions.assertThrows(BusinessException.class, () -> useCase.validarAssuntos(assuntos));
-        }
-
-        @Test
-        void testeValidarDadosEntrada_QuandoCodigoForNulo() {
-            LivroDTO livroDTO = LivroDTO.builder()
-                    .titulo("Livro de Teste")
-                    .autorCodAus(Arrays.asList(1, 2))
-                    .assuntoCodAss(Arrays.asList(3, 4))
-                    .build();
-
-            Assertions.assertThrows(BusinessException.class, () -> useCase.validarDadosEntrada(livroDTO));
-        }
-
-        @Test
-        void testeValidarDadosEntrada_QuandoCodigoForNegativo() {
-            LivroDTO livroDTO = LivroDTO.builder()
-                    .titulo("Livro de Teste")
-                    .autorCodAus(Arrays.asList(1, 2))
-                    .assuntoCodAss(Arrays.asList(3, 4))
-                    .build();
-
-            Assertions.assertThrows(BusinessException.class, () -> useCase.validarDadosEntrada(livroDTO));
-        }
-
-        @Test
-        void testeValidarDadosEntrada_QuandoDtoForNulo() {
-            Assertions.assertThrows(NullPointerException.class, () -> useCase.validarDadosEntrada(null));
-        }
-
-        @Test
-        void testeValidarDadosEntrada_QuandoTituloForNuloOuVazio() {
-            LivroDTO livroDTO = LivroDTO.builder()
-                    .autorCodAus(Arrays.asList(1, 2))
-                    .assuntoCodAss(Arrays.asList(3, 4))
-                    .build();
-
-            Assertions.assertThrows(BusinessException.class, () -> useCase.validarDadosEntrada(livroDTO));
-        }
-
-        @Test
-        void testeValidarDadosEntrada_QuandoListaDeAutoresForNulaOuVazia() {
-            LivroDTO livroDTO = LivroDTO.builder()
-                    .titulo("Livro de Teste")
-                    .assuntoCodAss(Arrays.asList(3, 4))
-                    .build();
-
-            Assertions.assertThrows(BusinessException.class, () -> useCase.validarDadosEntrada(livroDTO));
-        }
-
-        @Test
-        void testeValidarDadosEntrada_QuandoListaDeAssuntosForNulaOuVazia() {
-            LivroDTO livroDTO = LivroDTO.builder()
-                    .titulo("Livro de Teste")
-                    .autorCodAus(Arrays.asList(1, 2))
-                    .build();
-
-            Assertions.assertThrows(BusinessException.class, () -> useCase.validarDadosEntrada(livroDTO));
-        }
+        verify(livroRepository, never()).save(any());
     }
 
-    @Nested
-    @DisplayName("Testes de busca")
-    class BuscaTests {
+    @Test
+    @DisplayName("Deve lançar exceção quando autor não for encontrado")
+    void deveLancarExcecaoQuandoAutorNaoEncontrado() {
+        when(livroRepository.findByCodigo(LIVRO_ID)).thenReturn(Optional.of(livro));
+        when(autorRepository.findByCodigo(1)).thenReturn(Optional.empty());
 
-        @Test
-        @DisplayName("Deve lançar exceção quando livro não encontrado")
-        void deveLancarExcecaoQuandoLivroNaoEncontrado() {
-            when(livroRepository.findByCodigo(any())).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> useCase.execute(LIVRO_ID, livroDTO))
+                .isInstanceOf(AuthorNotFoundException.class)
+                .hasMessage("Autor com código 1 não encontrado");
 
-            EntityNotFoundException exception = assertThrows(EntityNotFoundException.class,
-                    () -> useCase.execute(1, livroDTO));
-            assertEquals("Livro com código 1 não encontrado", exception.getMessage());
-        }
+        verify(livroRepository, never()).save(any());
+    }
 
-        @Test
-        @DisplayName("Deve lançar exceção quando autor não encontrado")
-        void deveLancarExcecaoQuandoAutorNaoEncontrado() {
-            when(livroRepository.findByCodigo(1)).thenReturn(Optional.of(livro));
-            when(autorRepository.findByCodigo(any())).thenReturn(Optional.empty());
+    @Test
+    @DisplayName("Deve lançar exceção quando assunto não for encontrado")
+    void deveLancarExcecaoQuandoAssuntoNaoEncontrado() {
+        when(livroRepository.findByCodigo(LIVRO_ID)).thenReturn(Optional.of(livro));
+        when(autorRepository.findByCodigo(1)).thenReturn(Optional.of(autor));
+        when(assuntoRepository.findByCodigo(1)).thenReturn(Optional.empty());
 
-            BusinessException exception = assertThrows(BusinessException.class,
-                    () -> useCase.execute(1, livroDTO));
-            assertEquals("Autor com código 1 não encontrado", exception.getMessage());
-        }
+        assertThatThrownBy(() -> useCase.execute(LIVRO_ID, livroDTO))
+                .isInstanceOf(SubjectNotFoundException.class)
+                .hasMessage("Assunto com código 1 não encontrado");
 
-        @Test
-        @DisplayName("Deve lançar exceção quando assunto não encontrado")
-        void deveLancarExcecaoQuandoAssuntoNaoEncontrado() {
-            when(livroRepository.findByCodigo(1)).thenReturn(Optional.of(livro));
-            when(autorRepository.findByCodigo(1)).thenReturn(Optional.of(autor));
-            when(assuntoRepository.findByCodigo(any())).thenReturn(Optional.empty());
+        verify(livroRepository, never()).save(any());
+    }
 
-            BusinessException exception = assertThrows(BusinessException.class,
-                    () -> useCase.execute(1, livroDTO));
-            assertEquals("Assunto com código 1 não encontrado", exception.getMessage());
-        }
+    @Test
+    @DisplayName("Deve lançar exceção quando título não for informado")
+    void deveLancarExcecaoQuandoTituloNaoInformado() {
+        when(livroRepository.findByCodigo(LIVRO_ID)).thenReturn(Optional.of(livro));
+        livroDTO.setTitulo("");
+
+        assertThatThrownBy(() -> useCase.execute(LIVRO_ID, livroDTO))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Título não informado, campo obrigatório");
+
+        verify(livroRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção quando editora não for informada")
+    void deveLancarExcecaoQuandoEditoraNaoInformada() {
+        when(livroRepository.findByCodigo(LIVRO_ID)).thenReturn(Optional.of(livro));
+        livroDTO.setEditora("");
+
+        assertThatThrownBy(() -> useCase.execute(LIVRO_ID, livroDTO))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Editora não informada, campo obrigatório");
+
+        verify(livroRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção quando lista de autores for vazia")
+    void deveLancarExcecaoQuandoListaAutoresVazia() {
+        when(livroRepository.findByCodigo(LIVRO_ID)).thenReturn(Optional.of(livro));
+        livroDTO.setAutorCodAus(List.of());
+
+        assertThatThrownBy(() -> useCase.execute(LIVRO_ID, livroDTO))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Lista de autores não informada, campo obrigatório");
+
+        verify(livroRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção quando lista de assuntos for vazia")
+    void deveLancarExcecaoQuandoListaAssuntosVazia() {
+        when(livroRepository.findByCodigo(LIVRO_ID)).thenReturn(Optional.of(livro));
+        livroDTO.setAssuntoCodAss(List.of());
+
+        assertThatThrownBy(() -> useCase.execute(LIVRO_ID, livroDTO))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Lista de assuntos não informada, campo obrigatório");
+
+        verify(livroRepository, never()).save(any());
     }
 }
-

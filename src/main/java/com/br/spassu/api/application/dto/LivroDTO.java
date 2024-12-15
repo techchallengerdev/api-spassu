@@ -3,6 +3,7 @@ package com.br.spassu.api.application.dto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
@@ -18,11 +19,12 @@ public class LivroDTO {
     @JsonProperty("codigo")
     private Integer codigo;
 
-    @NotBlank(message = "Título é obrigatório")
+    @NotBlank(message = "Título não informado, campo obrigatório")
     @Size(max = 40, message = "Título deve ter no máximo 40 caracteres")
     @JsonProperty("titulo")
     private String titulo;
 
+    @NotBlank(message = "Editora não informada, campo obrigatório")
     @Size(max = 40, message = "Editora deve ter no máximo 40 caracteres")
     @JsonProperty("editora")
     private String editora;
@@ -35,9 +37,11 @@ public class LivroDTO {
     private String anoPublicacao;
 
     @JsonProperty("autorCodAus")
+    @NotEmpty(message = "Lista de autores não informada, campo obrigatório")
     private List<Integer> autorCodAus;
 
     @JsonProperty("assuntoCodAss")
+    @NotEmpty(message = "Lista de assuntos não informada, campo obrigatório")
     private List<Integer> assuntoCodAss;
 
     @JsonProperty("autores")
