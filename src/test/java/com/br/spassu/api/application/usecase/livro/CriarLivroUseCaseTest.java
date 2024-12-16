@@ -110,9 +110,9 @@ class CriarLivroUseCaseTest {
     @DisplayName("Deve criar livro Refactoring com múltiplos autores e assuntos")
     void deveCriarLivroRefactoringComMultiplosAutoresEAssuntos() {
 
-        livroDTO.setTitulo("Refactoring: Improving the Design of Existing Code");
-        livroDTO.setAutorCodAus(List.of(1, 2)); // Uncle Bob e Martin Fowler
-        livroDTO.setAssuntoCodAss(List.of(1, 2)); // Clean Code e Arquitetura
+        livroDTO.setTitulo("Refactoring: Improving the Design");
+        livroDTO.setAutorCodAus(List.of(1, 2));
+        livroDTO.setAssuntoCodAss(List.of(1, 2));
 
         when(autorRepository.findByCodigo(1)).thenReturn(Optional.of(robertMartin));
         when(autorRepository.findByCodigo(2)).thenReturn(Optional.of(martinFowler));

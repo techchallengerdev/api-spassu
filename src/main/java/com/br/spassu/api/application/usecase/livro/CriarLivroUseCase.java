@@ -34,6 +34,7 @@ public class CriarLivroUseCase {
     public ResponseWrapper<LivroDTO> execute(LivroDTO livroDTO) {
         validarDadosLivro(livroDTO);
         validarCamposObrigatorios(livroDTO);
+        validarListas(livroDTO);
 
         List<Autor> autores = buscarAutores(livroDTO.getAutorCodAus());
         List<Assunto> assuntos = buscarAssuntos(livroDTO.getAssuntoCodAss());
@@ -99,5 +100,14 @@ public class CriarLivroUseCase {
                 .map(codigoAssunto -> assuntoRepository.findByCodigo(codigoAssunto)
                         .orElseThrow(() -> new SubjectNotFoundException(codigoAssunto)))
                 .collect(Collectors.toList());
+    }
+
+    private void validarListas(LivroDTO livroDTO) {
+        if (livroDTO.getAssuntoCodAss() == null || livroDTO.getAssuntoCodAss().isEmpty()) {
+            throw new InvalidBookDataException("Lista de assuntos não informada, campo obrigatório");
+        }
+        if (livroDTO.getAutorCodAus() == null || livroDTO.getAutorCodAus().isEmpty()) {
+            throw new InvalidBookDataException("Lista de autores não informada, campo obrigatório");
+        }
     }
 }

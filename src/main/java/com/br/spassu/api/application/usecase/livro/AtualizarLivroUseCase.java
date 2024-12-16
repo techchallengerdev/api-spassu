@@ -36,6 +36,7 @@ public class AtualizarLivroUseCase {
     public ResponseWrapper<LivroDTO> execute(Integer codigo, LivroDTO livroDTO) {
         validarDadosLivro(livroDTO);
         validarCamposObrigatorios(livroDTO);
+        validarListas(livroDTO);
 
         Livro livroExistente = buscarLivroExistente(codigo);
         List<Autor> autores = buscarAutores(livroDTO.getAutorCodAus());
@@ -106,5 +107,15 @@ public class AtualizarLivroUseCase {
                 .map(codigoAssunto -> assuntoRepository.findByCodigo(codigoAssunto)
                         .orElseThrow(() -> new SubjectNotFoundException(codigoAssunto)))
                 .collect(Collectors.toList());
+    }
+
+    private void validarListas(LivroDTO livroDTO) {
+        if (livroDTO.getAssuntoCodAss() == null || livroDTO.getAssuntoCodAss().isEmpty()) {
+            throw new InvalidBookDataException("Lista de assuntos não informada, campo obrigatório");
+        }
+
+        if (livroDTO.getAutorCodAus() == null || livroDTO.getAutorCodAus().isEmpty()) {
+            throw new InvalidBookDataException("Lista de autores não informada, campo obrigatório");
+        }
     }
 }

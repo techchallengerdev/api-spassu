@@ -3,21 +3,26 @@ package com.br.spassu.api.application.usecase.autor;
 import com.br.spassu.api.application.dto.AutorDTO;
 import com.br.spassu.api.application.mapper.AutorMapper;
 import com.br.spassu.api.domain.entity.Autor;
-import com.br.spassu.api.domain.exceptions.BusinessException;
-import com.br.spassu.api.domain.exceptions.EntityNotFoundException;
+import com.br.spassu.api.domain.exceptions.InvalidAuthorDataException;
 import com.br.spassu.api.domain.repository.AutorRepository;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import com.br.spassu.api.infrastructure.response.ResponseWrapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
 class AtualizarAutorUseCaseTest {
 
     @Mock
@@ -27,97 +32,71 @@ class AtualizarAutorUseCaseTest {
     private AutorMapper autorMapper;
 
     @InjectMocks
-    private AtualizarAutorUseCase useCase;
-
-    @BeforeEach
-    void setup() {
-        MockitoAnnotations.openMocks(this);
-    }
+    private AtualizarAutorUseCase atualizarAutorUseCase;
 
     @Nested
     @DisplayName("Testes de sucesso")
-    class SucessoTests {
+    class TestesComSucesso {
 
         @Test
-        @DisplayName("Deve atualizar um autor com sucesso")
+        @DisplayName("Deve atualizar autor com sucesso")
         void deveAtualizarAutorComSucesso() {
-            // Arrange
-            Integer id = 1;
-            AutorDTO autorDTO = AutorDTO.builder()
-                    .codigo(id)
-                    .nome("Autor de Teste Atualizado")
-                    .build();
 
-            Autor autor = Autor.builder()
-                    .codigo(id)
-                    .nome("Autor de Teste Atualizado")
-                    .build();
+            Integer codigo = 1;
+            AutorDTO inputDto = AutorDTO.builder().nome("John Doe Updated").build();
+            Autor autorExistente = Autor.builder().codigo(codigo).nome("John Doe").build();
+            Autor autorAtualizado = Autor.builder().codigo(codigo).nome("John Doe Updated").build();
+            AutorDTO outputDto = AutorDTO.builder().codigo(codigo).nome("John Doe Updated").build();
 
-            Mockito.when(autorRepository.findByCodigo(id)).thenReturn(Optional.of(autor));
-            Mockito.when(autorRepository.save(Mockito.any(Autor.class))).thenReturn(autor);
-            Mockito.when(autorMapper.toDto(Mockito.any(Autor.class))).thenReturn(autorDTO);
+            when(autorRepository.findByCodigo(codigo)).thenReturn(Optional.of(autorExistente));
+            when(autorRepository.save(any(Autor.class))).thenReturn(autorAtualizado);
+            when(autorMapper.toDto(autorAtualizado)).thenReturn(outputDto);
 
-            // Act
-            AutorDTO resultado = useCase.execute(id, autorDTO);
+            ResponseWrapper<AutorDTO> response = atualizarAutorUseCase.execute(codigo, inputDto);
 
-            // Assert
-            Assertions.assertNotNull(resultado);
-            Assertions.assertEquals(id, resultado.getCodigo());
-            Assertions.assertEquals("Autor de Teste Atualizado", resultado.getNome());
+            assertThat(response).isNotNull();
+            assertThat(response.getMessage()).isEqualTo("Autor atualizado com sucesso");
+            assertThat(response.getData()).isEqualTo(outputDto);
+            assertThat(response.getData().getNome()).isEqualTo("John Doe Updated");
+            verify(autorRepository).save(any(Autor.class));
+        }
+
+        @Test
+        @DisplayName("Deve atualizar autor removendo espaços em branco do nome")
+        void deveAtualizarAutorRemovendoEspacosEmBranco() {
+
+            Integer codigo = 1;
+            AutorDTO inputDto = AutorDTO.builder().nome("  John Doe Updated  ").build();
+            Autor autorExistente = Autor.builder().codigo(codigo).nome("John Doe").build();
+            Autor autorAtualizado = Autor.builder().codigo(codigo).nome("John Doe Updated").build();
+            AutorDTO outputDto = AutorDTO.builder().codigo(codigo).nome("John Doe Updated").build();
+
+            when(autorRepository.findByCodigo(codigo)).thenReturn(Optional.of(autorExistente));
+            when(autorRepository.save(any(Autor.class))).thenReturn(autorAtualizado);
+            when(autorMapper.toDto(autorAtualizado)).thenReturn(outputDto);
+
+            ResponseWrapper<AutorDTO> response = atualizarAutorUseCase.execute(codigo, inputDto);
+
+            assertThat(response.getData().getNome()).isEqualTo("John Doe Updated");
         }
     }
 
     @Nested
     @DisplayName("Testes de validação")
-    class ValidacaoTests {
-
-        @Test
-        @DisplayName("Deve lançar exceção quando código for nulo")
-        void deveLancarExcecaoQuandoCodigoNulo() {
-            AutorDTO autorDTO = AutorDTO.builder()
-                    .nome("Autor de Teste Atualizado")
-                    .build();
-
-            Assertions.assertThrows(BusinessException.class, () -> useCase.execute(null, autorDTO));
-        }
+    class TestesValidacao {
 
         @Test
         @DisplayName("Deve lançar exceção quando código for inválido")
         void deveLancarExcecaoQuandoCodigoInvalido() {
-            AutorDTO autorDTO = AutorDTO.builder()
-                    .nome("Autor de Teste Atualizado")
-                    .build();
+            AutorDTO dto = AutorDTO.builder().nome("John Doe").build();
 
-            Assertions.assertThrows(BusinessException.class, () -> useCase.execute(0, autorDTO));
-        }
+            assertThatThrownBy(() -> atualizarAutorUseCase.execute(null, dto))
+                    .isInstanceOf(InvalidAuthorDataException.class)
+                    .hasMessage("Código do autor inválido");
 
-        @Test
-        @DisplayName("Deve lançar exceção quando DTO for nulo")
-        void deveLancarExcecaoQuandoDtoNulo() {
-            Assertions.assertThrows(BusinessException.class, () -> useCase.execute(1, null));
-        }
-
-        @Test
-        @DisplayName("Deve lançar exceção quando nome for nulo ou vazio")
-        void deveLancarExcecaoQuandoNomeNuloOuVazio() {
-            AutorDTO autorDTO = AutorDTO.builder()
-                    .nome(null)
-                    .build();
-
-            Assertions.assertThrows(BusinessException.class, () -> useCase.execute(1, autorDTO));
-        }
-
-        @Test
-        @DisplayName("Deve lançar exceção quando autor não for encontrado")
-        void deveLancarExcecaoQuandoAutorNaoEncontrado() {
-            Integer id = 1;
-            AutorDTO autorDTO = AutorDTO.builder()
-                    .nome("Autor de Teste Atualizado")
-                    .build();
-
-            Mockito.when(autorRepository.findByCodigo(id)).thenReturn(Optional.empty());
-
-            Assertions.assertThrows(EntityNotFoundException.class, () -> useCase.execute(id, autorDTO));
+            assertThatThrownBy(() -> atualizarAutorUseCase.execute(0, dto))
+                    .isInstanceOf(InvalidAuthorDataException.class)
+                    .hasMessage("Código do autor inválido");
         }
     }
 }

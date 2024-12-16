@@ -1,94 +1,109 @@
 package com.br.spassu.api.application.usecase.autor;
 
 import com.br.spassu.api.domain.entity.Autor;
-import com.br.spassu.api.domain.exceptions.BusinessException;
-import com.br.spassu.api.domain.exceptions.EntityNotFoundException;
+import com.br.spassu.api.domain.exceptions.AuthorNotFoundException;
+import com.br.spassu.api.domain.exceptions.InvalidAuthorDataException;
 import com.br.spassu.api.domain.repository.AutorRepository;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import com.br.spassu.api.infrastructure.response.ResponseWrapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
 class DeletarAutorUseCaseTest {
 
     @Mock
     private AutorRepository autorRepository;
 
     @InjectMocks
-    private DeletarAutorUseCase useCase;
-
-    @BeforeEach
-    void setup() {
-        MockitoAnnotations.openMocks(this);
-    }
+    private DeletarAutorUseCase deletarAutorUseCase;
 
     @Nested
     @DisplayName("Testes de sucesso")
-    class SucessoTests {
+    class TestesComSucesso {
 
         @Test
-        @DisplayName("Deve deletar um autor com sucesso")
+        @DisplayName("Deve deletar autor com sucesso")
         void deveDeletarAutorComSucesso() {
-            // Arrange
+            Integer codigo = 1;
             Autor autor = Autor.builder()
-                    .codigo(1)
-                    .nome("Autor de Teste")
+                    .codigo(codigo)
+                    .nome("John Doe")
                     .build();
 
-            Mockito.when(autorRepository.findByCodigo(1)).thenReturn(Optional.of(autor));
-            Mockito.doNothing().when(autorRepository).delete(1);
+            when(autorRepository.findByCodigo(codigo)).thenReturn(Optional.of(autor));
+            doNothing().when(autorRepository).delete(codigo);
 
-            // Act
-            useCase.execute(1);
+            ResponseWrapper<Void> response = deletarAutorUseCase.execute(codigo);
 
-            // Assert
-            Mockito.verify(autorRepository, Mockito.times(1)).delete(1);
+            assertThat(response).isNotNull();
+            assertThat(response.getMessage()).isEqualTo("Autor deletado com sucesso");
+            assertThat(response.getData()).isNull();
+            verify(autorRepository).delete(codigo);
         }
     }
 
     @Nested
     @DisplayName("Testes de validação")
-    class ValidacaoTests {
+    class TestesValidacao {
 
         @Test
         @DisplayName("Deve lançar exceção quando código for nulo")
         void deveLancarExcecaoQuandoCodigoNulo() {
-            Assertions.assertThrows(BusinessException.class, () -> useCase.execute(null));
+            assertThatThrownBy(() -> deletarAutorUseCase.execute(null))
+                    .isInstanceOf(InvalidAuthorDataException.class)
+                    .hasMessage("Código do autor inválido");
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando código for inválido")
-        void deveLancarExcecaoQuandoCodigoInvalido() {
-            Assertions.assertThrows(BusinessException.class, () -> useCase.execute(0));
+        @DisplayName("Deve lançar exceção quando código for menor ou igual a zero")
+        void deveLancarExcecaoQuandoCodigoMenorIgualZero() {
+            assertThatThrownBy(() -> deletarAutorUseCase.execute(0))
+                    .isInstanceOf(InvalidAuthorDataException.class)
+                    .hasMessage("Código do autor inválido");
+
+            assertThatThrownBy(() -> deletarAutorUseCase.execute(-1))
+                    .isInstanceOf(InvalidAuthorDataException.class)
+                    .hasMessage("Código do autor inválido");
         }
 
         @Test
         @DisplayName("Deve lançar exceção quando autor não for encontrado")
         void deveLancarExcecaoQuandoAutorNaoEncontrado() {
-            Mockito.when(autorRepository.findByCodigo(1)).thenReturn(Optional.empty());
+            Integer codigo = 1;
+            when(autorRepository.findByCodigo(codigo)).thenReturn(Optional.empty());
 
-            Assertions.assertThrows(EntityNotFoundException.class, () -> useCase.execute(1));
+            assertThatThrownBy(() -> deletarAutorUseCase.execute(codigo))
+                    .isInstanceOf(AuthorNotFoundException.class)
+                    .hasMessage("Autor com código 1 não encontrado");
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando erro ocorrer durante deleção")
-        void deveLancarExcecaoQuandoOcorrerErroNaDeleicao() {
+        @DisplayName("Deve lançar exceção quando ocorrer erro na deleção")
+        void deveLancarExcecaoQuandoErroDeletar() {
+            Integer codigo = 1;
             Autor autor = Autor.builder()
-                    .codigo(1)
-                    .nome("Autor de Teste")
+                    .codigo(codigo)
+                    .nome("John Doe")
                     .build();
 
-            Mockito.when(autorRepository.findByCodigo(1)).thenReturn(Optional.of(autor));
-            Mockito.doThrow(new RuntimeException("Erro na deleção")).when(autorRepository).delete(1);
+            when(autorRepository.findByCodigo(codigo)).thenReturn(Optional.of(autor));
+            doThrow(new RuntimeException("Erro ao deletar"))
+                    .when(autorRepository).delete(codigo);
 
-            Assertions.assertThrows(BusinessException.class, () -> useCase.execute(1));
+            assertThatThrownBy(() -> deletarAutorUseCase.execute(codigo))
+                    .isInstanceOf(InvalidAuthorDataException.class)
+                    .hasMessageContaining("Erro ao excluir autor com código 1");
         }
     }
 }

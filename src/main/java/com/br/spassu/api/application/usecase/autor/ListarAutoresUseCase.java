@@ -3,8 +3,9 @@ package com.br.spassu.api.application.usecase.autor;
 import com.br.spassu.api.application.dto.AutorDTO;
 import com.br.spassu.api.application.mapper.AutorMapper;
 import com.br.spassu.api.domain.entity.Autor;
-import com.br.spassu.api.domain.exceptions.BusinessException;
+import com.br.spassu.api.domain.exceptions.InvalidAuthorDataException;
 import com.br.spassu.api.domain.repository.AutorRepository;
+import com.br.spassu.api.infrastructure.response.ResponseWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,30 +19,20 @@ public class ListarAutoresUseCase {
     private final AutorRepository autorRepository;
     private final AutorMapper autorMapper;
 
+    private static final String SUCESSO_LISTAR_AUTORES = "Lista de autores recuperada com sucesso";
+
     @Transactional(readOnly = true)
-    public List<AutorDTO> execute() {
-        List<Autor> autores = buscarAutores();
-        validarResultado(autores);
-        return converterParaDTO(autores);
-    }
-
-    private List<Autor> buscarAutores() {
+    public ResponseWrapper<List<AutorDTO>> execute() {
         try {
-            return autorRepository.findAll();
+            List<Autor> autores = autorRepository.findAll();
+            return ResponseWrapper.<List<AutorDTO>>builder()
+                    .message(SUCESSO_LISTAR_AUTORES)
+                    .data(autores.stream()
+                            .map(autorMapper::toDto)
+                            .collect(Collectors.toList()))
+                    .build();
         } catch (Exception e) {
-            throw new BusinessException("Erro ao buscar autores: " + e.getMessage());
+            throw new InvalidAuthorDataException("Erro ao buscar autores: " + e.getMessage());
         }
-    }
-
-    private void validarResultado(List<Autor> autores) {
-        if (autores == null) {
-            throw new BusinessException("Erro ao recuperar a lista de autores");
-        }
-    }
-
-    private List<AutorDTO> converterParaDTO(List<Autor> autores) {
-        return autores.stream()
-                .map(autorMapper::toDto)
-                .collect(Collectors.toList());
     }
 }

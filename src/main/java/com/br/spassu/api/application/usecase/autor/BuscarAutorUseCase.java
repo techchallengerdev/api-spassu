@@ -3,9 +3,10 @@ package com.br.spassu.api.application.usecase.autor;
 import com.br.spassu.api.application.dto.AutorDTO;
 import com.br.spassu.api.application.mapper.AutorMapper;
 import com.br.spassu.api.domain.entity.Autor;
-import com.br.spassu.api.domain.exceptions.BusinessException;
-import com.br.spassu.api.domain.exceptions.EntityNotFoundException;
+import com.br.spassu.api.domain.exceptions.AuthorNotFoundException;
+import com.br.spassu.api.domain.exceptions.InvalidAuthorDataException;
 import com.br.spassu.api.domain.repository.AutorRepository;
+import com.br.spassu.api.infrastructure.response.ResponseWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,25 +17,24 @@ public class BuscarAutorUseCase {
     private final AutorRepository autorRepository;
     private final AutorMapper autorMapper;
 
+    private static final String SUCESSO_BUSCAR_AUTOR = "Autor encontrado com sucesso";
+
     @Transactional(readOnly = true)
-    public AutorDTO execute(Integer codigo) {
-        validarDadosEntrada(codigo);
-        Autor autor = buscarAutor(codigo);
-        return autorMapper.toDto(autor);
+    public ResponseWrapper<AutorDTO> execute(Integer codigo) {
+        validarCodigo(codigo);
+
+        Autor autor = autorRepository.findByCodigo(codigo)
+                .orElseThrow(() -> new AuthorNotFoundException(codigo));
+
+        return ResponseWrapper.<AutorDTO>builder()
+                .message(SUCESSO_BUSCAR_AUTOR)
+                .data(autorMapper.toDto(autor))
+                .build();
     }
 
-    private void validarDadosEntrada(Integer codigo) {
-        if (codigo == null) {
-            throw new BusinessException("Código do autor não informado");
+    private void validarCodigo(Integer codigo) {
+        if (codigo == null || codigo <= 0) {
+            throw new InvalidAuthorDataException("Código do autor inválido");
         }
-        if (codigo <= 0) {
-            throw new BusinessException("Código do autor deve ser maior que zero");
-        }
-    }
-
-    private Autor buscarAutor(Integer codigo) {
-        return autorRepository.findByCodigo(codigo)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        String.format("Autor com código %d não encontrado", codigo)));
     }
 }

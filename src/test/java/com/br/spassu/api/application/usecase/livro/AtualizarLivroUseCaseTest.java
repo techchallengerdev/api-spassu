@@ -5,10 +5,7 @@ import com.br.spassu.api.application.mapper.LivroMapper;
 import com.br.spassu.api.domain.entity.Assunto;
 import com.br.spassu.api.domain.entity.Autor;
 import com.br.spassu.api.domain.entity.Livro;
-import com.br.spassu.api.domain.exceptions.AuthorNotFoundException;
-import com.br.spassu.api.domain.exceptions.BookNotFoundException;
-import com.br.spassu.api.domain.exceptions.BusinessException;
-import com.br.spassu.api.domain.exceptions.SubjectNotFoundException;
+import com.br.spassu.api.domain.exceptions.*;
 import com.br.spassu.api.domain.repository.AssuntoRepository;
 import com.br.spassu.api.domain.repository.AutorRepository;
 import com.br.spassu.api.domain.repository.LivroRepository;
@@ -21,6 +18,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -141,54 +139,60 @@ class AtualizarLivroUseCaseTest {
     }
 
     @Test
-    @DisplayName("Deve lançar exceção quando título não for informado")
+    @DisplayName("Deve lançar exceção quando título não informado")
     void deveLancarExcecaoQuandoTituloNaoInformado() {
-        when(livroRepository.findByCodigo(LIVRO_ID)).thenReturn(Optional.of(livro));
-        livroDTO.setTitulo("");
+        LivroDTO dto = LivroDTO.builder()
+                .editora("Editora")
+                .autorCodAus(List.of(1))
+                .assuntoCodAss(List.of(1))
+                .build();
 
-        assertThatThrownBy(() -> useCase.execute(LIVRO_ID, livroDTO))
-                .isInstanceOf(BusinessException.class)
+        assertThatThrownBy(() -> useCase.execute(1, dto))
+                .isInstanceOf(InvalidBookDataException.class)
                 .hasMessage("Título não informado, campo obrigatório");
 
-        verify(livroRepository, never()).save(any());
+        verify(livroRepository, never()).findByCodigo(anyInt());
     }
 
     @Test
-    @DisplayName("Deve lançar exceção quando editora não for informada")
+    @DisplayName("Deve lançar exceção quando editora não informada")
     void deveLancarExcecaoQuandoEditoraNaoInformada() {
-        when(livroRepository.findByCodigo(LIVRO_ID)).thenReturn(Optional.of(livro));
-        livroDTO.setEditora("");
+        LivroDTO dto = LivroDTO.builder()
+                .titulo("Título")
+                .autorCodAus(List.of(1))
+                .assuntoCodAss(List.of(1))
+                .build();
 
-        assertThatThrownBy(() -> useCase.execute(LIVRO_ID, livroDTO))
-                .isInstanceOf(BusinessException.class)
+        assertThatThrownBy(() -> useCase.execute(1, dto))
+                .isInstanceOf(InvalidBookDataException.class)
                 .hasMessage("Editora não informada, campo obrigatório");
-
-        verify(livroRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("Deve lançar exceção quando lista de autores for vazia")
+    @DisplayName("Deve lançar exceção quando lista de autores vazia")
     void deveLancarExcecaoQuandoListaAutoresVazia() {
-        when(livroRepository.findByCodigo(LIVRO_ID)).thenReturn(Optional.of(livro));
-        livroDTO.setAutorCodAus(List.of());
+        LivroDTO dto = LivroDTO.builder()
+                .titulo("Título")
+                .editora("Editora")
+                .assuntoCodAss(List.of(1))
+                .build();
 
-        assertThatThrownBy(() -> useCase.execute(LIVRO_ID, livroDTO))
-                .isInstanceOf(BusinessException.class)
+        assertThatThrownBy(() -> useCase.execute(1, dto))
+                .isInstanceOf(InvalidBookDataException.class)
                 .hasMessage("Lista de autores não informada, campo obrigatório");
-
-        verify(livroRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("Deve lançar exceção quando lista de assuntos for vazia")
+    @DisplayName("Deve lançar exceção quando lista de assuntos vazia")
     void deveLancarExcecaoQuandoListaAssuntosVazia() {
-        when(livroRepository.findByCodigo(LIVRO_ID)).thenReturn(Optional.of(livro));
-        livroDTO.setAssuntoCodAss(List.of());
+        LivroDTO dto = LivroDTO.builder()
+                .titulo("Título")
+                .editora("Editora")
+                .autorCodAus(List.of(1))
+                .build();
 
-        assertThatThrownBy(() -> useCase.execute(LIVRO_ID, livroDTO))
-                .isInstanceOf(BusinessException.class)
+        assertThatThrownBy(() -> useCase.execute(1, dto))
+                .isInstanceOf(InvalidBookDataException.class)
                 .hasMessage("Lista de assuntos não informada, campo obrigatório");
-
-        verify(livroRepository, never()).save(any());
     }
 }

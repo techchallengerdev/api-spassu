@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
@@ -19,7 +20,8 @@ public class LivroDTO {
     @JsonProperty("codigo")
     private Integer codigo;
 
-    @NotBlank(message = "Título não informado, campo obrigatório")
+    @NotBlank(message = "Título é obrigatório")
+    @NotNull(message = "Título não pode ser nulo")
     @Size(max = 40, message = "Título deve ter no máximo 40 caracteres")
     @JsonProperty("titulo")
     private String titulo;

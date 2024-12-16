@@ -9,7 +9,6 @@ import com.br.spassu.api.domain.repository.LivroRepository;
 import com.br.spassu.api.infrastructure.response.ResponseWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -17,28 +16,26 @@ public class BuscarLivroUseCase {
     private final LivroRepository livroRepository;
     private final LivroMapper livroMapper;
 
-    public ResponseWrapper<LivroDTO> execute(Integer id) {
-        Livro livro = livroRepository.findByCodigo(id)
-                .orElseThrow(() -> new BookNotFoundException(id));
+    private static final String SUCESSO_BUSCAR_LIVRO = "Livro encontrado com sucesso";
+
+    public ResponseWrapper<LivroDTO> execute(Integer codigo) {
+        validarCodigo(codigo);
+
+        Livro livro = livroRepository.findByCodigo(codigo)
+                .orElseThrow(() -> new BookNotFoundException(codigo));
 
         return ResponseWrapper.<LivroDTO>builder()
-                .message("Livro encontrado com sucesso")
+                .message(SUCESSO_BUSCAR_LIVRO)
                 .data(livroMapper.toDto(livro))
                 .build();
     }
 
-    private void validarDadosEntrada(Integer codigo) {
+    private void validarCodigo(Integer codigo) {
         if (codigo == null) {
-            throw new BusinessException("Código do livro não informado");
+            throw new BusinessException("Código do livro não pode ser nulo");
         }
         if (codigo <= 0) {
             throw new BusinessException("Código do livro deve ser maior que zero");
         }
-    }
-
-    private Livro buscarLivro(Integer codigo) {
-        return livroRepository.findByCodigo(codigo)
-                .orElseThrow(() -> new BusinessException(
-                        String.format("Livro com código %d não encontrado", codigo)));
     }
 }
