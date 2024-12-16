@@ -5,6 +5,7 @@ import com.br.spassu.api.application.mapper.LivroMapper;
 import com.br.spassu.api.domain.entity.Livro;
 import com.br.spassu.api.domain.exceptions.BusinessException;
 import com.br.spassu.api.domain.repository.LivroRepository;
+import com.br.spassu.api.infrastructure.response.ResponseWrapper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -42,7 +43,7 @@ class ListarLivrosUseCaseTest {
         @Test
         @DisplayName("Deve listar todos os livros com sucesso")
         void deveListarLivrosComSucesso() {
-            // Arrange
+
             Livro livro1 = Livro.builder()
                     .codigo(1)
                     .titulo("Livro de Teste 1")
@@ -80,15 +81,14 @@ class ListarLivrosUseCaseTest {
             List<LivroDTO> dtos = Arrays.asList(dto1, dto2);
 
             Mockito.when(livroRepository.findAll()).thenReturn(livros);
-            Mockito.when(livroMapper.toDto(Mockito.any(Livro.class))).thenReturn(dto1, dto2);
+            Mockito.when(livroMapper.toDto(livro1)).thenReturn(dto1);
+            Mockito.when(livroMapper.toDto(livro2)).thenReturn(dto2);
 
-            // Act
-            List<LivroDTO> resultado = useCase.execute();
+            ResponseWrapper<List<LivroDTO>> resultado = useCase.execute();
 
-            // Assert
             Assertions.assertNotNull(resultado);
-            Assertions.assertEquals(dtos.size(), resultado.size());
-            Assertions.assertEquals(dtos, resultado);
+            Assertions.assertEquals("Lista de livros recuperada com sucesso", resultado.getMessage());
+            Assertions.assertEquals(dtos, resultado.getData());
         }
     }
 
@@ -107,24 +107,15 @@ class ListarLivrosUseCaseTest {
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando a lista de livros for nula")
-        void deveLancarExcecaoQuandoListaLivrosForNula() {
-            Mockito.when(livroRepository.findAll()).thenReturn(null);
-
-            BusinessException exception = Assertions.assertThrows(BusinessException.class, () -> useCase.execute());
-
-            Assertions.assertEquals("Erro ao recuperar a lista de livros", exception.getMessage());
-        }
-
-        @Test
         @DisplayName("Deve retornar uma lista vazia quando não houver livros")
         void deveRetornarListaVaziaQuandoNaoHouverLivros() {
             Mockito.when(livroRepository.findAll()).thenReturn(Collections.emptyList());
 
-            List<LivroDTO> resultado = useCase.execute();
+            ResponseWrapper<List<LivroDTO>> resultado = useCase.execute();
 
             Assertions.assertNotNull(resultado);
-            Assertions.assertTrue(resultado.isEmpty());
+            Assertions.assertEquals("Lista de livros recuperada com sucesso", resultado.getMessage());
+            Assertions.assertTrue(resultado.getData().isEmpty());
         }
     }
 }

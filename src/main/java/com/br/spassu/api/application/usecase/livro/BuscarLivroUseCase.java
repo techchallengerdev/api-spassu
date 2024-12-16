@@ -3,8 +3,10 @@ package com.br.spassu.api.application.usecase.livro;
 import com.br.spassu.api.application.dto.LivroDTO;
 import com.br.spassu.api.application.mapper.LivroMapper;
 import com.br.spassu.api.domain.entity.Livro;
+import com.br.spassu.api.domain.exceptions.BookNotFoundException;
 import com.br.spassu.api.domain.exceptions.BusinessException;
 import com.br.spassu.api.domain.repository.LivroRepository;
+import com.br.spassu.api.infrastructure.response.ResponseWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,11 +17,14 @@ public class BuscarLivroUseCase {
     private final LivroRepository livroRepository;
     private final LivroMapper livroMapper;
 
-    @Transactional(readOnly = true)
-    public LivroDTO execute(Integer codigo) {
-        validarDadosEntrada(codigo);
-        Livro livro = buscarLivro(codigo);
-        return livroMapper.toDto(livro);
+    public ResponseWrapper<LivroDTO> execute(Integer id) {
+        Livro livro = livroRepository.findByCodigo(id)
+                .orElseThrow(() -> new BookNotFoundException(id));
+
+        return ResponseWrapper.<LivroDTO>builder()
+                .message("Livro encontrado com sucesso")
+                .data(livroMapper.toDto(livro))
+                .build();
     }
 
     private void validarDadosEntrada(Integer codigo) {

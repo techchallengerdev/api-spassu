@@ -4,9 +4,7 @@ import com.br.spassu.api.application.dto.LivroDTO;
 import com.br.spassu.api.application.usecase.livro.*;
 import com.br.spassu.api.infrastructure.exception.ApiError;
 import com.br.spassu.api.infrastructure.response.ResponseWrapper;
-import com.br.spassu.api.infrastructure.validation.ValidJson;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -33,7 +31,6 @@ public class LivroController {
     private final ListarLivrosUseCase listarLivrosUseCase;
     private final AtualizarLivroUseCase atualizarLivroUseCase;
     private final DeletarLivroUseCase deletarLivroUseCase;
-    private final ObjectMapper objectMapper;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -56,33 +53,106 @@ public class LivroController {
     @GetMapping("/{id}")
     @Operation(summary = "Buscar livro por ID")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Livro encontrado",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
-            @ApiResponse(responseCode = "404", description = "Livro não encontrado",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class)))
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Livro encontrado com sucesso",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(value = """
+                        {
+                          "message": "Livro encontrado com sucesso",
+                          "data": {
+                            "codigo": 1,
+                            "titulo": "Clean Architecture",
+                            "editora": "Alta Books",
+                            "edicao": 1,
+                            "anoPublicacao": "2020",
+                            "autorCodAus": [1],
+                            "assuntoCodAss": [1],
+                            "autores": [{
+                              "codigo": 1,
+                              "nome": "Robert C. Martin"
+                            }],
+                            "assuntos": [{
+                              "codigo": 1,
+                              "descricao": "Arquitetura de Software"
+                            }]
+                          }
+                        }
+                        """)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Livro não encontrado",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiError.class),
+                            examples = @ExampleObject(value = """
+                        {
+                          "type": "https://api.spassu.com.br/errors/not-found",
+                          "title": "Recurso não encontrado",
+                          "detail": "Livro com código 1 não encontrado",
+                          "status": 404,
+                          "timestamp": "2024-12-15T10:30:00Z"
+                        }
+                        """)
+                    )
+            )
     })
-    public ResponseWrapper<LivroDTO> buscarPorId(@PathVariable Integer id) {
-        LivroDTO livro = buscarLivroUseCase.execute(id);
-        return ResponseWrapper.<LivroDTO>builder()
-                .message("Livro encontrado com sucesso")
-                .data(livro)
-                .build();
+    public ResponseWrapper<LivroDTO> buscarPorId(
+            @Parameter(description = "ID do livro", example = "1", required = true)
+            @PathVariable Integer id) {
+        return buscarLivroUseCase.execute(id);
     }
 
     @GetMapping
     @Operation(summary = "Listar todos os livros")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Lista de livros recuperada com sucesso",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))),
-            @ApiResponse(responseCode = "500", description = "Erro interno do servidor",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class)))
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Lista de livros recuperada com sucesso",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(value = """
+                        {
+                          "message": "Lista de livros recuperada com sucesso",
+                          "data": [
+                            {
+                              "codigo": 1,
+                              "titulo": "Clean Architecture",
+                              "editora": "Alta Books",
+                              "edicao": 1,
+                              "anoPublicacao": "2020",
+                              "autorCodAus": [1],
+                              "assuntoCodAss": [1],
+                              "autores": [{
+                                "codigo": 1,
+                                "nome": "Robert C. Martin"
+                              }],
+                              "assuntos": [{
+                                "codigo": 1,
+                                "descricao": "Arquitetura de Software"
+                              }]
+                            }
+                          ]
+                        }
+                        """)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Erro interno do servidor",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiError.class)
+                    )
+            )
     })
     public ResponseWrapper<List<LivroDTO>> listarTodos() {
-        List<LivroDTO> livros = listarLivrosUseCase.execute();
-        return ResponseWrapper.<List<LivroDTO>>builder()
-                .message("Lista de livros recuperada com sucesso")
-                .data(livros)
-                .build();
+        return listarLivrosUseCase.execute();
     }
 
     @PutMapping("/{id}")
